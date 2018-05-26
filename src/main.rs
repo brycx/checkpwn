@@ -14,6 +14,9 @@ use std::env;
 use hyper_tls::HttpsConnector;
 use colored::*;
 use serde_json::Value;
+use std::io::{BufReader, BufRead, Error};
+use std::fs::File;
+use std::{thread, time};
 
 
 struct ApiRoutes {
@@ -28,6 +31,7 @@ struct Query {
 }
 
 static EMAIL: &'static str = "email";
+static EMAIL_LIST: &'static str = "emaillist";
 static PASSWORD: &'static str = "pass";
 static PASSWORD_SHA1: &'static str = "sha1pass";
 
@@ -46,7 +50,7 @@ fn arg_to_api_route(arg: String, input_data: String) -> hyper::Uri {
 
     let url: hyper::Uri;
 
-    if arg.to_owned() == EMAIL {
+    if (arg.to_owned() == EMAIL) || (arg.to_owned() == EMAIL_LIST) {
         url = make_req(
             &hibp_api.email_route,
             &input_data,
@@ -69,6 +73,8 @@ fn arg_to_api_route(arg: String, input_data: String) -> hyper::Uri {
         );
     } else { panic!("Invalid option {}", arg) }
 
+    
+    
     url
 } 
 
@@ -107,16 +113,23 @@ fn hash_password(password: &str) -> String {
 
 }
 
-fn breach_report(status_code: hyper::StatusCode, opt_argument: &String, resp_body: hyper::Chunk) {
+fn breach_report(status_code: hyper::StatusCode, opt_argument: &String, resp_body: hyper::Chunk, line: Option<String>) {
+    
+    let searchterm = match line {
+        Some(ref keyword) => keyword,
+        None => opt_argument,
+    };
+
+    
     match status_code {
         StatusCode::NotFound => {
-            println!("Breach status: {}", "NO BREACH FOUND".green());
+            println!("Breach status for {}: {}", searchterm.cyan(), "NO BREACH FOUND".green());
         },
         StatusCode::Ok => {
-            println!("Breach status: {}", "BREACH FOUND".red());
+            println!("Breach status for {}: {}", searchterm.cyan(), "BREACH FOUND".red());
             // Only list of breached sites get sent when using
             // email, not with password.
-            if opt_argument.to_owned() == EMAIL {
+            if (opt_argument.to_owned() == EMAIL) || (opt_argument.to_owned() == EMAIL_LIST) {
                 let v: Value = serde_json::from_slice(&resp_body).unwrap();
                 let mut breached_sites = String::new();
 
@@ -133,6 +146,14 @@ fn breach_report(status_code: hyper::StatusCode, opt_argument: &String, resp_bod
     }
 }
 
+pub fn read_file(path: &str) -> Result<BufReader<File>, Error> {
+
+    let file_path = File::open(path).unwrap();
+    let file = BufReader::new(file_path);
+
+    Ok(file)
+}
+
 fn main() {
 
     let mut core = Core::new().expect("Failed to initialize Tokio core");
@@ -146,24 +167,57 @@ fn main() {
     let option_arg = &argvs[1].to_lowercase();
     let data_search = &argvs[2].to_lowercase();
 
-    let url = arg_to_api_route(option_arg.to_owned(), data_search.to_owned());
+    if option_arg.to_owned() == EMAIL_LIST {
+        let file = read_file(data_search).unwrap();
 
-    let mut requester: Request = Request::new(Method::Get, url);
-    requester.headers_mut().set(UserAgent::new("checkpwn - cargo utility tool for HIBP"));
+        for line_iter in file.lines() {
 
-    let work = client.request(requester).and_then(|res| {
+            let line = line_iter.unwrap();
 
-        let status_code = res.status();
-
-        res.body().concat2().and_then(move |body| {
-            // Return breach status
-            breach_report(status_code, option_arg, body);
+            let url = arg_to_api_route(option_arg.to_owned(), line.clone());
             
-            Ok(())
-        })
-    });
+            let mut requester: Request = Request::new(Method::Get, url);
+            requester.headers_mut().set(UserAgent::new("checkpwn - cargo utility tool for HIBP"));
 
-    core.run(work).expect("Failed to initialize Tokio core");
+            let work = client.request(requester).and_then(|res| {
+
+                let status_code = res.status();
+
+                res.body().concat2().and_then(move |body| {
+                    // Return breach status
+                    breach_report(status_code, &option_arg, body, Some(line));
+            
+                    Ok(())
+                })
+            });
+
+            // Only one request every 1500 miliseconds from any given IP
+            thread::sleep(time::Duration::from_millis(1600));
+        
+            core.run(work).expect("Failed to initialize Tokio core");
+        }
+    }
+
+    else {
+        
+        let url = arg_to_api_route(option_arg.to_owned(), data_search.to_owned());
+        let mut requester: Request = Request::new(Method::Get, url);
+        requester.headers_mut().set(UserAgent::new("checkpwn - cargo utility tool for HIBP"));
+
+        let work = client.request(requester).and_then(|res| {
+
+            let status_code = res.status();
+
+            res.body().concat2().and_then(move |body| {
+                // Return breach status
+                breach_report(status_code, &option_arg, body, None);
+            
+                Ok(())
+            })
+        });
+        
+        core.run(work).expect("Failed to initialize Tokio core");
+    }
 }
 
 

@@ -9,6 +9,9 @@ Check [Have I Been Pwned](https://haveibeenpwned.com/) and see if it's time for 
 #### Check an email
 ```checkpwn email test@example.com```
 
+#### Check a list of emails
+```checkpwn emaillist ./list.txt```
+
 #### Check a password
 ```checkpwn pass qwerty```
 
