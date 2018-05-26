@@ -19,6 +19,9 @@ Check [Have I Been Pwned](https://haveibeenpwned.com/) and see if it's time for 
 #### Check a password
 ```checkpwn pass qwerty```
 
+#### Demo
+![alt text](screenshot/screen.png "Demo")
+
 
 _NOTE: Passwords are hashed with SHA1 before calling the Have I Been Pwned API.
 They store passwords as SHA1 hashes and will compute it themselves if this tool didn't.
