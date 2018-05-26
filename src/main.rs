@@ -91,52 +91,52 @@ fn main() {
     let password_option = String::from("pass");
     let password_option_sha = String::from("sha1pass");
 
-    let mut url = String::new();
+    let url: hyper::Uri;
 
     if option_arg.to_owned() == email_option {
         url = make_req(
-            &hibp_api.email_route, 
-            &data_search, 
-            Some(&hibp_queries.include_unverified), 
+            &hibp_api.email_route,
+            &data_search,
+            Some(&hibp_queries.include_unverified),
             Some(&hibp_queries.truncate_response)
-        );
+        ).parse().expect("Failed to parse URL");
     } else if option_arg.to_owned() == password_option {
         url = make_req(
-            &hibp_api.password_route, 
-            &hash_password(&data_search), 
-            None, 
+            &hibp_api.password_route,
+            &hash_password(&data_search),
+            None,
             None
-        );
+        ).parse().expect("Failed to parse URL");
     } else if option_arg.to_owned() == password_option_sha {
         url = make_req(
-            &hibp_api.password_route, 
-            &hash_password(&data_search), 
-            Some(&hibp_queries.password_is_sha1), 
+            &hibp_api.password_route,
+            &hash_password(&data_search),
+            Some(&hibp_queries.password_is_sha1),
             None
-        );
+        ).parse().expect("Failed to parse URL");
     } else { panic!("Invalid option {}", option_arg) }
 
-    let mut requester: Request = Request::new(Method::Get, url.parse().expect("Failed to parse URL"));
+    let mut requester: Request = Request::new(Method::Get, url);
     requester.headers_mut().set(UserAgent::new("checkpwn - cargo utility tool for HIBP"));
 
     let work = client.request(requester).and_then(|res| {
 
         let response = res.status();
-        
+
         res.body().concat2().and_then(move |body| {
             // Return breach status
             match response {
-                StatusCode::NotFound => { 
+                StatusCode::NotFound => {
                     println!("Breach status: {}", "NO BREACH FOUND".green());
                 },
-                StatusCode::Ok => { 
+                StatusCode::Ok => {
                     println!("Breach status: {}", "BREACH FOUND".red());
                     // Only list of breached sites get sent when using
                     // email, not with password.
-                    if option_arg.to_owned() == email_option {  
+                    if option_arg.to_owned() == email_option {
                         let v: Value = serde_json::from_slice(&body).unwrap();
                         let mut breached_sites = String::new();
-                    
+
                         for index in 0..v.as_array().unwrap().len() {
                             let site = v[index].get("Name").unwrap();
                             breached_sites.push_str(site.as_str().unwrap());
@@ -151,6 +151,6 @@ fn main() {
             Ok(())
         })
     });
-    
+
     core.run(work).expect("Failed to initialize Tokio core");
 }
