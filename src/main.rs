@@ -3,7 +3,6 @@ extern crate hyper;
 extern crate hyper_tls;
 extern crate tokio_core;
 extern crate colored;
-extern crate serde_json;
 extern crate sha1;
 
 use futures::Future;
