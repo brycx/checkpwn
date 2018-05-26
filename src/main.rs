@@ -160,7 +160,9 @@ fn main() {
         .build(&core.handle());
 
     let argvs: Vec<String> = env::args().collect();
-    assert_eq!(argvs.len(), 3);
+    if argvs.len() != 3 {
+        panic!("Usage: checkpwn email test@example.com");
+    }
 
     let option_arg = &argvs[1].to_lowercase();
     let data_search = &argvs[2].to_lowercase();
