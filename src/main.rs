@@ -73,8 +73,6 @@ fn arg_to_api_route(arg: String, input_data: String) -> hyper::Uri {
         );
     } else { panic!("Invalid option {}", arg) }
 
-    
-    
     url
 } 
 
@@ -115,11 +113,11 @@ fn hash_password(password: &str) -> String {
 
 fn breach_report(status_code: hyper::StatusCode, opt_argument: &String, resp_body: hyper::Chunk, line: Option<String>) {
     
+    // Will be set to keyword when run through list
     let searchterm = match line {
         Some(ref keyword) => keyword,
         None => opt_argument,
     };
-
     
     match status_code {
         StatusCode::NotFound => {
@@ -146,7 +144,7 @@ fn breach_report(status_code: hyper::StatusCode, opt_argument: &String, resp_bod
     }
 }
 
-pub fn read_file(path: &str) -> Result<BufReader<File>, Error> {
+fn read_file(path: &str) -> Result<BufReader<File>, Error> {
 
     let file_path = File::open(path).unwrap();
     let file = BufReader::new(file_path);
@@ -168,14 +166,13 @@ fn main() {
     let data_search = &argvs[2].to_lowercase();
 
     if option_arg.to_owned() == EMAIL_LIST {
+        
         let file = read_file(data_search).unwrap();
 
         for line_iter in file.lines() {
 
             let line = line_iter.unwrap();
-
             let url = arg_to_api_route(option_arg.to_owned(), line.clone());
-            
             let mut requester: Request = Request::new(Method::Get, url);
             requester.headers_mut().set(UserAgent::new("checkpwn - cargo utility tool for HIBP"));
 
@@ -191,10 +188,10 @@ fn main() {
                 })
             });
 
-            // Only one request every 1500 miliseconds from any given IP
-            thread::sleep(time::Duration::from_millis(1600));
-        
             core.run(work).expect("Failed to initialize Tokio core");
+            
+            // Only one request every 1500 miliseconds from any given IP
+            thread::sleep(time::Duration::from_millis(1600));       
         }
     }
 
