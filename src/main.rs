@@ -111,13 +111,7 @@ fn hash_password(password: &str) -> String {
 
 }
 
-fn breach_report(status_code: hyper::StatusCode, opt_argument: &String, resp_body: hyper::Chunk, line: Option<String>) {
-    
-    // Will be set to keyword when run through list
-    let searchterm = match line {
-        Some(ref keyword) => keyword,
-        None => opt_argument,
-    };
+fn breach_report(status_code: hyper::StatusCode, opt_argument: &String, resp_body: hyper::Chunk, searchterm: String) {
     
     match status_code {
         StatusCode::NotFound => {
@@ -184,7 +178,7 @@ fn main() {
 
                 res.body().concat2().and_then(move |body| {
                     // Return breach status
-                    breach_report(status_code, &option_arg, body, Some(line));
+                    breach_report(status_code, &option_arg, body, line);
             
                     Ok(())
                 })
@@ -209,7 +203,7 @@ fn main() {
 
             res.body().concat2().and_then(move |body| {
                 // Return breach status
-                breach_report(status_code, &option_arg, body, None);
+                breach_report(status_code, &option_arg, body, data_search.to_owned());
             
                 Ok(())
             })
