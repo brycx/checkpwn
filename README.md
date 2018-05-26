@@ -6,14 +6,17 @@ Check [Have I Been Pwned](https://haveibeenpwned.com/) and see if it's time for 
 #### Install
 ```cargo install checkpwn```
 
-#### Check an email
+#### Check sites or pastes with email
 ```checkpwn email test@example.com```
+```checkpwn paste test@example.com```
 
-#### Check a list of emails
+#### Check sites or pastes with list of emails
 ```checkpwn emaillist ./list.txt```
+```checkpwn pastelist ./list.txt```
 
 #### Check a password
 ```checkpwn pass qwerty```
+
 
 _NOTE: Passwords are hashed with SHA1 before calling the Have I Been Pwned API.
 They store passwords as SHA1 hashes and will compute it themselves if this tool didn't.

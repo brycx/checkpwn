@@ -6,14 +6,13 @@ extern crate colored;
 extern crate serde_json;
 extern crate sha1;
 
-use futures::{Future, Stream};
+use futures::Future;
 use hyper::{Client, Request, Method, StatusCode};
 use hyper::header::UserAgent;
 use tokio_core::reactor::Core;
 use std::env;
 use hyper_tls::HttpsConnector;
 use colored::*;
-use serde_json::Value;
 use std::io::{BufReader, BufRead, Error};
 use std::fs::File;
 use std::{thread, time};
@@ -22,6 +21,7 @@ use std::{thread, time};
 struct ApiRoutes {
     email_route: String,
     password_route: String,
+    paste_route: String,
 }
 
 struct Query {
@@ -34,12 +34,15 @@ static EMAIL: &'static str = "email";
 static EMAIL_LIST: &'static str = "emaillist";
 static PASSWORD: &'static str = "pass";
 static PASSWORD_SHA1: &'static str = "sha1pass";
+static PASTE: &'static str = "paste";
+static PASTE_LIST: &'static str = "pastelist";
 
 fn arg_to_api_route(arg: String, input_data: String) -> hyper::Uri {
 
     let hibp_api = ApiRoutes {
         email_route: String::from("https://haveibeenpwned.com/api/v2/breachedaccount/"),
         password_route: String::from("https://api.pwnedpasswords.com/pwnedpassword/"),
+        paste_route: String::from("https://haveibeenpwned.com/api/v2/pasteaccount/"),
     };
 
     let hibp_queries = Query {
@@ -70,6 +73,13 @@ fn arg_to_api_route(arg: String, input_data: String) -> hyper::Uri {
             &hash_password(&input_data),
             Some(&hibp_queries.password_is_sha1),
             None
+        );
+    } else if (arg.to_owned() == PASTE) || (arg.to_owned() == PASTE_LIST) {
+        url = make_req(
+            &hibp_api.paste_route,
+            &input_data,
+            None,
+            None,
         );
     } else { panic!("Invalid option {}", arg) }
 
@@ -111,7 +121,7 @@ fn hash_password(password: &str) -> String {
 
 }
 
-fn breach_report(status_code: hyper::StatusCode, opt_argument: &String, resp_body: hyper::Chunk, searchterm: String) {
+fn breach_report(status_code: hyper::StatusCode, searchterm: String) {
     
     match status_code {
         StatusCode::NotFound => {
@@ -119,20 +129,6 @@ fn breach_report(status_code: hyper::StatusCode, opt_argument: &String, resp_bod
         },
         StatusCode::Ok => {
             println!("Breach status for {}: {}", searchterm.cyan(), "BREACH FOUND".red());
-            // Only list of breached sites get sent when using
-            // email, not with password.
-            if (opt_argument.to_owned() == EMAIL) || (opt_argument.to_owned() == EMAIL_LIST) {
-                let v: Value = serde_json::from_slice(&resp_body).unwrap();
-                let mut breached_sites = String::new();
-
-                for index in 0..v.as_array().unwrap().len() {
-                    let site = v[index].get("Name").unwrap();
-                    breached_sites.push_str(site.as_str().unwrap());
-                    breached_sites.push_str(", ");
-                }
-
-                println!("Breach(es) happened at: {}", breached_sites);
-            }
         },
         _ => panic!("Unrecognized status code detected")
     }
@@ -161,7 +157,7 @@ fn main() {
     let option_arg = &argvs[1].to_lowercase();
     let data_search = &argvs[2].to_lowercase();
 
-    if option_arg.to_owned() == EMAIL_LIST {
+    if (option_arg.to_owned() == EMAIL_LIST) || (option_arg.to_owned() == PASTE_LIST) {
         
         let file = read_file(data_search).unwrap();
 
@@ -175,13 +171,10 @@ fn main() {
             let work = client.request(requester).and_then(|res| {
 
                 let status_code = res.status();
+                // Return breach status
+                breach_report(status_code, line);
 
-                res.body().concat2().and_then(move |body| {
-                    // Return breach status
-                    breach_report(status_code, &option_arg, body, line);
-            
-                    Ok(())
-                })
+                Ok(())
             });
 
             core.run(work).expect("Failed to initialize Tokio core");
@@ -200,13 +193,10 @@ fn main() {
         let work = client.request(requester).and_then(|res| {
 
             let status_code = res.status();
+            // Return breach status
+            breach_report(status_code, data_search.to_owned());
 
-            res.body().concat2().and_then(move |body| {
-                // Return breach status
-                breach_report(status_code, &option_arg, body, data_search.to_owned());
-            
-                Ok(())
-            })
+            Ok(())
         });
         
         core.run(work).expect("Failed to initialize Tokio core");
