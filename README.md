@@ -8,10 +8,12 @@ Check [Have I Been Pwned](https://haveibeenpwned.com/) and see if it's time for 
 
 #### Check sites or pastes with email
 ```checkpwn email test@example.com```
+
 ```checkpwn paste test@example.com```
 
 #### Check sites or pastes with list of emails
 ```checkpwn emaillist ./list.txt```
+
 ```checkpwn pastelist ./list.txt```
 
 #### Check a password
