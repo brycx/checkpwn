@@ -21,7 +21,6 @@ struct ApiRoutes {
     email_route: String,
     password_route: String,
     paste_route: String,
-    password_range: String,
 }
 
 struct Query {
@@ -33,7 +32,6 @@ struct Query {
 static EMAIL: &'static str = "email";
 static EMAIL_LIST: &'static str = "emaillist";
 static PASSWORD: &'static str = "pass";
-static PASSWORD_RANGE: &'static str = "passrange";
 static PASSWORD_SHA1: &'static str = "sha1pass";
 static PASTE: &'static str = "paste";
 static PASTE_LIST: &'static str = "pastelist";
@@ -42,9 +40,8 @@ fn arg_to_api_route(arg: String, input_data: String) -> hyper::Uri {
 
     let hibp_api = ApiRoutes {
         email_route: String::from("https://haveibeenpwned.com/api/v2/breachedaccount/"),
-        password_route: String::from("https://api.pwnedpasswords.com/pwnedpassword/"),
+        password_route: String::from("https://api.pwnedpasswords.com/range/"),
         paste_route: String::from("https://haveibeenpwned.com/api/v2/pasteaccount/"),
-        password_range: String::from("https://api.pwnedpasswords.com/range/"),
     };
 
     let hibp_queries = Query {
@@ -65,9 +62,10 @@ fn arg_to_api_route(arg: String, input_data: String) -> hyper::Uri {
     } else if arg.to_owned() == PASSWORD {
         url = make_req(
             &hibp_api.password_route,
-            &hash_password(&input_data),
+            // Only send the first 5 chars to the range API
+            &hash_password(&input_data)[..5],
             None,
-            None
+            None,
         );
     } else if arg.to_owned() == PASSWORD_SHA1 {
         url = make_req(
@@ -80,14 +78,6 @@ fn arg_to_api_route(arg: String, input_data: String) -> hyper::Uri {
         url = make_req(
             &hibp_api.paste_route,
             &input_data,
-            None,
-            None,
-        );
-    } else if arg.to_owned() == PASSWORD_RANGE {
-        url = make_req(
-            &hibp_api.password_range,
-            // Only send the first 5 chars to the range API
-            &hash_password(&input_data)[..5],
             None,
             None,
         );
@@ -127,7 +117,7 @@ fn hash_password(password: &str) -> String {
 
     let mut shadig = sha1::Sha1::new();
     shadig.update(password.as_bytes());
-    shadig.digest().to_string()
+    shadig.digest().to_string().to_uppercase()
 
 }
 
@@ -158,16 +148,28 @@ fn split_range(response: &[u8]) ->  Vec<String> {
 
     // Split up range_string into vector of strings for each newline
     let range_vector: Vec<_> = range_string.lines().collect();
-    let mut final_vec: Vec<String> = Vec::new();
-
+    let mut final_vec: Vec<_> = vec![];
 
     // Each string truncated to only be the hash, no whitespaces
-    // All hashes here have a length of 35
-    for index in 0..range_vector.len() {
-        final_vec[index] = String::from(&range_vector[index][..35]);
+    // All hashes here have a length of 35, so the useless gets dropped
+    for index in range_vector {
+        final_vec.push(String::from(&index[..35]));
+    }
+    final_vec
+}
+
+fn search_in_range(search_space: Vec<String>, search_key: String) -> bool {
+
+    let mut res = false;
+    let hashed_key = String::from(&hash_password(&search_key)[5..]);
+
+    for index in search_space {
+        if index == hashed_key {
+            res = true;
+        }
     }
 
-    final_vec
+    res
 }
 
 fn main() {
@@ -221,25 +223,21 @@ fn main() {
         let work = client.request(requester).and_then(|res| {
 
             let status_code = res.status();
-            // Return breach status
-            breach_report(status_code, data_search.to_owned());
-
-            //if option_arg.to_owned() == PASSWORD_RANGE {
                 
-                res.body().concat2().and_then(move |body: Chunk| {
-                    let v = body.to_vec();
+            res.body().concat2().and_then(move |body: Chunk| {                    
                     
-                    println!("current IP address is {:?}", String::from_utf8_lossy(&v));
-                    Ok(())
-
-
-                
-                })
-
-                //println!("current IP address is {:?}", v);
-            //}
-
-            //Ok(())
+                if option_arg.to_owned() == PASSWORD {
+                    
+                    let breach_bool = search_in_range(split_range(&body.to_vec()), data_search.to_owned());
+                        
+                    if breach_bool == true {
+                        breach_report(status_code, data_search.to_owned());
+                        // If it is false, it's the same as a 404 StatusCode
+                    } else { breach_report(StatusCode::NotFound, data_search.to_owned()); }
+                }
+                    
+                Ok(())                
+            })
         });
         
         core.run(work).expect("Failed to initialize Tokio core");
