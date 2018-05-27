@@ -5,8 +5,8 @@ extern crate tokio_core;
 extern crate colored;
 extern crate sha1;
 
-use futures::Future;
-use hyper::{Client, Request, Method, StatusCode};
+use futures::{Future, Stream};
+use hyper::{Client, Request, Method, StatusCode, Chunk};
 use hyper::header::UserAgent;
 use tokio_core::reactor::Core;
 use std::env;
@@ -21,6 +21,7 @@ struct ApiRoutes {
     email_route: String,
     password_route: String,
     paste_route: String,
+    password_range: String,
 }
 
 struct Query {
@@ -32,6 +33,7 @@ struct Query {
 static EMAIL: &'static str = "email";
 static EMAIL_LIST: &'static str = "emaillist";
 static PASSWORD: &'static str = "pass";
+static PASSWORD_RANGE: &'static str = "passrange";
 static PASSWORD_SHA1: &'static str = "sha1pass";
 static PASTE: &'static str = "paste";
 static PASTE_LIST: &'static str = "pastelist";
@@ -42,6 +44,7 @@ fn arg_to_api_route(arg: String, input_data: String) -> hyper::Uri {
         email_route: String::from("https://haveibeenpwned.com/api/v2/breachedaccount/"),
         password_route: String::from("https://api.pwnedpasswords.com/pwnedpassword/"),
         paste_route: String::from("https://haveibeenpwned.com/api/v2/pasteaccount/"),
+        password_range: String::from("https://api.pwnedpasswords.com/range/"),
     };
 
     let hibp_queries = Query {
@@ -77,6 +80,14 @@ fn arg_to_api_route(arg: String, input_data: String) -> hyper::Uri {
         url = make_req(
             &hibp_api.paste_route,
             &input_data,
+            None,
+            None,
+        );
+    } else if arg.to_owned() == PASSWORD_RANGE {
+        url = make_req(
+            &hibp_api.password_range,
+            // Only send the first 5 chars to the range API
+            &hash_password(&input_data)[..5],
             None,
             None,
         );
@@ -141,6 +152,24 @@ fn read_file(path: &str) -> Result<BufReader<File>, Error> {
     Ok(file)
 }
 
+fn split_range(response: &[u8]) ->  Vec<String> {
+
+    let range_string = String::from_utf8_lossy(response);
+
+    // Split up range_string into vector of strings for each newline
+    let range_vector: Vec<_> = range_string.lines().collect();
+    let mut final_vec: Vec<String> = Vec::new();
+
+
+    // Each string truncated to only be the hash, no whitespaces
+    // All hashes here have a length of 35
+    for index in 0..range_vector.len() {
+        final_vec[index] = String::from(&range_vector[index][..35]);
+    }
+
+    final_vec
+}
+
 fn main() {
 
     let mut core = Core::new().expect("Failed to initialize Tokio core");
@@ -172,7 +201,7 @@ fn main() {
                 let status_code = res.status();
                 // Return breach status
                 breach_report(status_code, line);
-
+                
                 Ok(())
             });
 
@@ -195,7 +224,22 @@ fn main() {
             // Return breach status
             breach_report(status_code, data_search.to_owned());
 
-            Ok(())
+            //if option_arg.to_owned() == PASSWORD_RANGE {
+                
+                res.body().concat2().and_then(move |body: Chunk| {
+                    let v = body.to_vec();
+                    
+                    println!("current IP address is {:?}", String::from_utf8_lossy(&v));
+                    Ok(())
+
+
+                
+                })
+
+                //println!("current IP address is {:?}", v);
+            //}
+
+            //Ok(())
         });
         
         core.run(work).expect("Failed to initialize Tokio core");
