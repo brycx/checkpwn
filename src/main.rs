@@ -18,7 +18,7 @@ use std::{thread, time};
 
 
 struct ApiRoutes {
-    email_route: String,
+    acc_route: String,
     password_route: String,
     paste_route: String,
 }
@@ -29,8 +29,8 @@ struct Query {
     password_is_sha1: String,
 }
 
-static EMAIL: &'static str = "email";
-static EMAIL_LIST: &'static str = "emaillist";
+static ACCOUNT: &'static str = "acc";
+static ACCOUNT_LIST: &'static str = "acclist";
 static PASSWORD: &'static str = "pass";
 static PASSWORD_SHA1: &'static str = "sha1pass";
 static PASTE: &'static str = "paste";
@@ -39,7 +39,7 @@ static PASTE_LIST: &'static str = "pastelist";
 fn arg_to_api_route(arg: String, input_data: String) -> hyper::Uri {
 
     let hibp_api = ApiRoutes {
-        email_route: String::from("https://haveibeenpwned.com/api/v2/breachedaccount/"),
+        acc_route: String::from("https://haveibeenpwned.com/api/v2/breachedaccount/"),
         password_route: String::from("https://api.pwnedpasswords.com/range/"),
         paste_route: String::from("https://haveibeenpwned.com/api/v2/pasteaccount/"),
     };
@@ -52,9 +52,9 @@ fn arg_to_api_route(arg: String, input_data: String) -> hyper::Uri {
 
     let url: hyper::Uri;
 
-    if (arg.to_owned() == EMAIL) || (arg.to_owned() == EMAIL_LIST) {
+    if (arg.to_owned() == ACCOUNT) || (arg.to_owned() == ACCOUNT_LIST) {
         url = make_req(
-            &hibp_api.email_route,
+            &hibp_api.acc_route,
             &input_data,
             Some(&hibp_queries.include_unverified),
             Some(&hibp_queries.truncate_response)
@@ -172,6 +172,7 @@ fn search_in_range(search_space: Vec<String>, search_key: String) -> bool {
     res
 }
 
+
 fn main() {
 
     let mut core = Core::new().expect("Failed to initialize Tokio core");
@@ -181,13 +182,13 @@ fn main() {
 
     let argvs: Vec<String> = env::args().collect();
     if argvs.len() != 3 {
-        panic!("Usage: checkpwn email test@example.com");
+        panic!("Usage: checkpwn acc test@example.com");
     }
 
     let option_arg = &argvs[1].to_lowercase();
     let data_search = &argvs[2].to_lowercase();
 
-    if (option_arg.to_owned() == EMAIL_LIST) || (option_arg.to_owned() == PASTE_LIST) {
+    if (option_arg.to_owned() == ACCOUNT_LIST) || (option_arg.to_owned() == PASTE_LIST) {
         
         let file = read_file(data_search).unwrap();
 
@@ -283,7 +284,7 @@ fn test_make_req() {
 #[test]
 fn test_good_argument() {
 
-    let option_arg = String::from("email");
+    let option_arg = String::from("acc");
     let data_search = String::from("test@example.com");
 
     arg_to_api_route(option_arg, data_search);
