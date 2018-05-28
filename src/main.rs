@@ -5,16 +5,21 @@ extern crate tokio_core;
 extern crate colored;
 extern crate sha1;
 
-use futures::{Future, Stream};
-use hyper::{Client, Request, Method, StatusCode, Chunk};
-use hyper::header::UserAgent;
-use tokio_core::reactor::Core;
-use std::env;
-use hyper_tls::HttpsConnector;
-use colored::*;
 use std::io::{BufReader, BufRead, Error};
 use std::fs::File;
-use std::{thread, time};
+use std::{thread, time, env};
+
+use futures::{Future, Stream};
+
+use tokio_core::reactor::Core;
+
+use hyper::{Client, Request, Method, StatusCode, Chunk};
+use hyper::header::UserAgent;
+use hyper_tls::HttpsConnector;
+
+use colored::*;
+
+
 
 struct ApiRoutes {
     acc_route: String,
@@ -46,32 +51,32 @@ fn arg_to_api_route(arg: String, input_data: String) -> hyper::Uri {
         password_is_sha1: String::from("originalPasswordIsAHash=true"),
     };
 
-    let url: hyper::Uri;
+    let uri: hyper::Uri;
 
-    if arg.to_owned() == ACCOUNT {
-        url = make_req(
+    if arg == ACCOUNT {
+        uri = format_req(
             &hibp_api.acc_route,
             &input_data,
             Some(&hibp_queries.include_unverified),
             Some(&hibp_queries.truncate_response)
         );
-    } else if arg.to_owned() == PASSWORD {
-        url = make_req(
+    } else if arg == PASSWORD {
+        uri = format_req(
             &hibp_api.password_route,
             // Only send the first 5 chars to the range API
             &hash_password(&input_data)[..5],
             None,
             None,
         );
-    } else if arg.to_owned() == PASSWORD_SHA1 {
-        url = make_req(
+    } else if arg == PASSWORD_SHA1 {
+        uri = format_req(
             &hibp_api.password_route,
             &hash_password(&input_data),
             Some(&hibp_queries.password_is_sha1),
             None
         );
-    } else if arg.to_owned() == "paste" {
-        url = make_req(
+    } else if arg == "paste" {
+        uri = format_req(
             &hibp_api.paste_route,
             &input_data,
             None,
@@ -79,10 +84,11 @@ fn arg_to_api_route(arg: String, input_data: String) -> hyper::Uri {
         );
     } else { panic!("Invalid option {}", arg) }
 
-    url
+    uri
 } 
 
-fn make_req(p1: &str, p2: &str, p3: Option<&str>, p4: Option<&str>) -> hyper::Uri {
+/// Format an API request to fit multiple parameters
+fn format_req(p1: &str, p2: &str, p3: Option<&str>, p4: Option<&str>) -> hyper::Uri {
 
     let mut request = String::new();
 
@@ -108,7 +114,7 @@ fn make_req(p1: &str, p2: &str, p3: Option<&str>, p4: Option<&str>) -> hyper::Ur
     request.parse().expect("Failed to parse URL")
 }
 
-
+/// Return SHA1 digest of string.
 fn hash_password(password: &str) -> String {
 
     let mut shadig = sha1::Sha1::new();
@@ -117,6 +123,7 @@ fn hash_password(password: &str) -> String {
 
 }
 
+/// Make a breach report based on StatusCode and print result.
 fn breach_report(status_code: hyper::StatusCode, searchterm: String) {
     
     match status_code {
@@ -130,6 +137,7 @@ fn breach_report(status_code: hyper::StatusCode, searchterm: String) {
     }
 }
 
+/// Read file into buffer.
 fn read_file(path: &str) -> Result<BufReader<File>, Error> {
 
     let file_path = File::open(path).unwrap();
@@ -138,6 +146,7 @@ fn read_file(path: &str) -> Result<BufReader<File>, Error> {
     Ok(file)
 }
 
+/// Take hyper::Response from quering password range API and split i into vector of strings.
 fn split_range(response: &[u8]) ->  Vec<String> {
 
     let range_string = String::from_utf8_lossy(response);
@@ -151,12 +160,16 @@ fn split_range(response: &[u8]) ->  Vec<String> {
     for index in range_vector {
         final_vec.push(String::from(&index[..35]));
     }
+    
     final_vec
 }
 
+/// Find matching key in recevied set of keys
 fn search_in_range(search_space: Vec<String>, search_key: String) -> bool {
 
     let mut res = false;
+    // Don't include first five chars of own password, as this also
+    // is how the HIBP API returns passwords
     let hashed_key = String::from(&hash_password(&search_key)[5..]);
 
     for index in search_space {
@@ -168,8 +181,9 @@ fn search_in_range(search_space: Vec<String>, search_key: String) -> bool {
     res
 }
 
+/// Return a breach report based on two StatusCodes, both need to be false to be a non-breach.
 fn evaluate_breach(acc_stat: StatusCode, paste_stat: StatusCode, search_key: String) -> () {
-    // Only if both StatusCodes for a breach report run on sites and pastes is 404, will it
+    // Only if both StatusCodes for sites and paste is 404, will it
     // return NO BREACH FOUND, else BREACH FOUND 
     match (acc_stat, paste_stat) {
         (StatusCode::NotFound, StatusCode::NotFound) => breach_report(StatusCode::NotFound, search_key),
@@ -177,12 +191,15 @@ fn evaluate_breach(acc_stat: StatusCode, paste_stat: StatusCode, search_key: Str
     }
 }
 
+/// Make API request for both paste and a command line argument.
 fn breach_request(url: &str, option_arg: &str) -> (hyper::Request, hyper::Request) {
     
+    // URI for quering password range, or account, API
     let uri = arg_to_api_route(option_arg.to_owned(), url.to_owned());
     let mut requester_acc: Request = Request::new(Method::Get, uri);
     requester_acc.headers_mut().set(UserAgent::new("checkpwn - cargo utility tool for HIBP"));
 
+    // URI for quering paste API
     let uri_paste = arg_to_api_route("paste".to_owned(), url.to_owned());
     let mut requester_paste: Request = Request::new(Method::Get, uri_paste);
     requester_paste.headers_mut().set(UserAgent::new("checkpwn - cargo utility tool for HIBP"));
@@ -266,7 +283,6 @@ fn main() {
                         
                         if breach_bool == true {
                             breach_report(status_code, data_search.to_owned());
-                            // If it is false, it's the same as a 404 StatusCode
                         } else { breach_report(StatusCode::NotFound, data_search.to_owned()); }
                     }   
                     
