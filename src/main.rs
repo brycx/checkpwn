@@ -178,6 +178,19 @@ fn evaluate_breach(acc_stat: StatusCode, paste_stat: StatusCode, search_key: Str
     }
 }
 
+fn breach_request(url: &str, option_arg: &str) -> (hyper::Request, hyper::Request) {
+    
+    let uri = arg_to_api_route(option_arg.to_owned(), url.to_owned());
+    let mut requester_acc: Request = Request::new(Method::Get, uri);
+    requester_acc.headers_mut().set(UserAgent::new("checkpwn - cargo utility tool for HIBP"));
+
+    let uri_paste = arg_to_api_route("paste".to_owned(), url.to_owned());
+    let mut requester_paste: Request = Request::new(Method::Get, uri_paste);
+    requester_paste.headers_mut().set(UserAgent::new("checkpwn - cargo utility tool for HIBP"));
+
+    (requester_acc, requester_paste)
+}
+
 fn main() {
 
     let mut core = Core::new().expect("Failed to initialize Tokio core");
@@ -201,16 +214,9 @@ fn main() {
 
             let line = line_iter.unwrap();
 
-            // Setup URLs to automatically query the paste API
-            let url = arg_to_api_route(option_arg.to_owned(), line.clone());
-            let mut requester: Request = Request::new(Method::Get, url);
-            requester.headers_mut().set(UserAgent::new("checkpwn - cargo utility tool for HIBP"));
+            let (requester_acc, requester_paste) = breach_request(&line, option_arg);
 
-            let url_paste = arg_to_api_route("paste".to_owned(), line.clone());
-            let mut requester_paste: Request = Request::new(Method::Get, url_paste);
-            requester_paste.headers_mut().set(UserAgent::new("checkpwn - cargo utility tool for HIBP"));
-
-            let get_acc = client.request(requester).map(|res| {
+            let get_acc = client.request(requester_acc).map(|res| {
                 res.status()
             });
 
@@ -230,18 +236,18 @@ fn main() {
 
     else {
 
-        if option_arg.to_owned() == ACCOUNT {
+        
+        let (requester_acc, requester_paste) = breach_request(data_search, option_arg);
 
-            let url = arg_to_api_route(option_arg.to_owned(), data_search.to_owned());
-            let mut requester: Request = Request::new(Method::Get, url);
-            requester.headers_mut().set(UserAgent::new("checkpwn - cargo utility tool for HIBP"));            
+
+        if option_arg.to_owned() == ACCOUNT {          
         
             let url_paste = arg_to_api_route("paste".to_owned(), data_search.to_owned());
             let mut requester_paste: Request = Request::new(Method::Get, url_paste);
             requester_paste.headers_mut().set(UserAgent::new("checkpwn - cargo utility tool for HIBP"));
             
             
-            let get_acc = client.request(requester).map(|res| {
+            let get_acc = client.request(requester_acc).map(|res| {
                 res.status()
             });
 
@@ -255,27 +261,23 @@ fn main() {
             evaluate_breach(acc_stat, paste_stat, data_search.to_owned());
         }
 
-        if option_arg.to_owned() == PASSWORD {
-
-            let url = arg_to_api_route(option_arg.to_owned(), data_search.to_owned());
-            let mut requester: Request = Request::new(Method::Get, url);
-            requester.headers_mut().set(UserAgent::new("checkpwn - cargo utility tool for HIBP"));
+        else if option_arg.to_owned() == PASSWORD {
             
-            let work = client.request(requester).and_then(|res| {
+            let work = client.request(requester_acc).and_then(|res| {
 
-            let status_code = res.status();
+                let status_code = res.status();
                 
-            res.body().concat2().and_then(move |body: Chunk| {                    
+                res.body().concat2().and_then(move |body: Chunk| {                    
                     
-                if option_arg.to_owned() == PASSWORD {
+                    if option_arg.to_owned() == PASSWORD {
                     
-                    let breach_bool = search_in_range(split_range(&body.to_vec()), data_search.to_owned());
+                        let breach_bool = search_in_range(split_range(&body.to_vec()), data_search.to_owned());
                         
-                    if breach_bool == true {
-                        breach_report(status_code, data_search.to_owned());
-                        // If it is false, it's the same as a 404 StatusCode
-                    } else { breach_report(StatusCode::NotFound, data_search.to_owned()); }
-                }
+                        if breach_bool == true {
+                            breach_report(status_code, data_search.to_owned());
+                            // If it is false, it's the same as a 404 StatusCode
+                        } else { breach_report(StatusCode::NotFound, data_search.to_owned()); }
+                    }   
                     
                     Ok(())                
                 })
