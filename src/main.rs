@@ -172,6 +172,14 @@ fn search_in_range(search_space: Vec<String>, search_key: String) -> bool {
     res
 }
 
+fn evaluate_breach(acc_stat: StatusCode, paste_stat: StatusCode, search_key: String) -> () {
+    // Only if both StatusCodes for a breach report run on sites and pastes is 404, will it
+    // return NO BREACH FOUND, else BREACH FOUND 
+    match (acc_stat, paste_stat) {
+        (StatusCode::NotFound, StatusCode::NotFound) => breach_report(StatusCode::NotFound, search_key),
+        _ => breach_report(StatusCode::Ok, search_key)
+    }
+}
 
 fn main() {
 
@@ -188,7 +196,7 @@ fn main() {
     let option_arg = &argvs[1].to_lowercase();
     let data_search = &argvs[2].to_lowercase();
 
-    if (option_arg.to_owned() == ACCOUNT_LIST) || (option_arg.to_owned() == PASTE_LIST) {
+    if data_search.to_owned().ends_with(".ls") {
         
         let file = read_file(data_search).unwrap();
 
@@ -199,17 +207,23 @@ fn main() {
             let mut requester: Request = Request::new(Method::Get, url);
             requester.headers_mut().set(UserAgent::new("checkpwn - cargo utility tool for HIBP"));
 
-            let work = client.request(requester).and_then(|res| {
+            let url_2 = arg_to_api_route("paste".to_owned(), line.clone());
+            let mut requester_2: Request = Request::new(Method::Get, url_2);
+            requester_2.headers_mut().set(UserAgent::new("checkpwn - cargo utility tool for HIBP"));
 
-                let status_code = res.status();
-                // Return breach status
-                breach_report(status_code, line);
-                
-                Ok(())
+            let get_acc = client.request(requester).map(|res| {
+                res.status()
             });
 
-            core.run(work).expect("Failed to initialize Tokio core");
-            
+            let get_paste = client.request(requester_2).map(|res| {
+                res.status()
+            });
+        
+            let work = get_acc.join(get_paste);
+            let (acc_stat, paste_stat) = core.run(work).expect("Failed to initialize Tokio core");
+            // Return breach report
+            evaluate_breach(acc_stat, paste_stat, line);
+
             // Only one request every 1500 miliseconds from any given IP
             thread::sleep(time::Duration::from_millis(1600));       
         }
