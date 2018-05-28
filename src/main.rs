@@ -16,7 +16,6 @@ use std::io::{BufReader, BufRead, Error};
 use std::fs::File;
 use std::{thread, time};
 
-
 struct ApiRoutes {
     acc_route: String,
     password_route: String,
@@ -191,6 +190,7 @@ fn breach_request(url: &str, option_arg: &str) -> (hyper::Request, hyper::Reques
     (requester_acc, requester_paste)
 }
 
+
 fn main() {
 
     let mut core = Core::new().expect("Failed to initialize Tokio core");
@@ -211,7 +211,6 @@ fn main() {
         let file = read_file(data_search).unwrap();
 
         for line_iter in file.lines() {
-
             let line = line_iter.unwrap();
 
             let (requester_acc, requester_paste) = breach_request(&line, option_arg);
@@ -225,7 +224,7 @@ fn main() {
             });
         
             let work = get_acc.join(get_paste);
-            let (acc_stat, paste_stat) = core.run(work).expect("Failed to initialize Tokio core");
+            let (acc_stat, paste_stat) = core.run(work).expect("Failed to run Tokio core");
             // Return breach report
             evaluate_breach(acc_stat, paste_stat, line);
 
@@ -234,18 +233,11 @@ fn main() {
         }
     }
 
-    else {
+    else {        
 
-        
         let (requester_acc, requester_paste) = breach_request(data_search, option_arg);
-
-
-        if option_arg.to_owned() == ACCOUNT {          
         
-            let url_paste = arg_to_api_route("paste".to_owned(), data_search.to_owned());
-            let mut requester_paste: Request = Request::new(Method::Get, url_paste);
-            requester_paste.headers_mut().set(UserAgent::new("checkpwn - cargo utility tool for HIBP"));
-            
+        if option_arg.to_owned() == ACCOUNT {          
             
             let get_acc = client.request(requester_acc).map(|res| {
                 res.status()
@@ -256,12 +248,11 @@ fn main() {
             });
 
             let work = get_acc.join(get_paste);
-            let (acc_stat, paste_stat) = core.run(work).expect("Failed to initialize Tokio core");
+            let (acc_stat, paste_stat) = core.run(work).expect("Failed to run Tokio core");
             // Return breach report
             evaluate_breach(acc_stat, paste_stat, data_search.to_owned());
-        }
-
-        else if option_arg.to_owned() == PASSWORD {
+        
+        } else if option_arg.to_owned() == PASSWORD {
             
             let work = client.request(requester_acc).and_then(|res| {
 
@@ -283,7 +274,7 @@ fn main() {
                 })
             });
 
-            core.run(work).expect("Failed to initialize Tokio core");
+            core.run(work).expect("Failed to run Tokio core");
         }
     }
 }
