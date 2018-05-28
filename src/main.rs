@@ -30,11 +30,8 @@ struct Query {
 }
 
 static ACCOUNT: &'static str = "acc";
-static ACCOUNT_LIST: &'static str = "acclist";
 static PASSWORD: &'static str = "pass";
 static PASSWORD_SHA1: &'static str = "sha1pass";
-static PASTE: &'static str = "paste";
-static PASTE_LIST: &'static str = "pastelist";
 
 fn arg_to_api_route(arg: String, input_data: String) -> hyper::Uri {
 
@@ -52,7 +49,7 @@ fn arg_to_api_route(arg: String, input_data: String) -> hyper::Uri {
 
     let url: hyper::Uri;
 
-    if (arg.to_owned() == ACCOUNT) || (arg.to_owned() == ACCOUNT_LIST) {
+    if arg.to_owned() == ACCOUNT {
         url = make_req(
             &hibp_api.acc_route,
             &input_data,
@@ -74,7 +71,7 @@ fn arg_to_api_route(arg: String, input_data: String) -> hyper::Uri {
             Some(&hibp_queries.password_is_sha1),
             None
         );
-    } else if (arg.to_owned() == PASTE) || (arg.to_owned() == PASTE_LIST) {
+    } else if arg.to_owned() == "paste" {
         url = make_req(
             &hibp_api.paste_route,
             &input_data,
@@ -203,19 +200,21 @@ fn main() {
         for line_iter in file.lines() {
 
             let line = line_iter.unwrap();
+
+            // Setup URLs to automatically query the paste API
             let url = arg_to_api_route(option_arg.to_owned(), line.clone());
             let mut requester: Request = Request::new(Method::Get, url);
             requester.headers_mut().set(UserAgent::new("checkpwn - cargo utility tool for HIBP"));
 
-            let url_2 = arg_to_api_route("paste".to_owned(), line.clone());
-            let mut requester_2: Request = Request::new(Method::Get, url_2);
-            requester_2.headers_mut().set(UserAgent::new("checkpwn - cargo utility tool for HIBP"));
+            let url_paste = arg_to_api_route("paste".to_owned(), line.clone());
+            let mut requester_paste: Request = Request::new(Method::Get, url_paste);
+            requester_paste.headers_mut().set(UserAgent::new("checkpwn - cargo utility tool for HIBP"));
 
             let get_acc = client.request(requester).map(|res| {
                 res.status()
             });
 
-            let get_paste = client.request(requester_2).map(|res| {
+            let get_paste = client.request(requester_paste).map(|res| {
                 res.status()
             });
         
@@ -230,12 +229,39 @@ fn main() {
     }
 
     else {
-        
-        let url = arg_to_api_route(option_arg.to_owned(), data_search.to_owned());
-        let mut requester: Request = Request::new(Method::Get, url);
-        requester.headers_mut().set(UserAgent::new("checkpwn - cargo utility tool for HIBP"));
 
-        let work = client.request(requester).and_then(|res| {
+        if option_arg.to_owned() == ACCOUNT {
+
+            let url = arg_to_api_route(option_arg.to_owned(), data_search.to_owned());
+            let mut requester: Request = Request::new(Method::Get, url);
+            requester.headers_mut().set(UserAgent::new("checkpwn - cargo utility tool for HIBP"));            
+        
+            let url_paste = arg_to_api_route("paste".to_owned(), data_search.to_owned());
+            let mut requester_paste: Request = Request::new(Method::Get, url_paste);
+            requester_paste.headers_mut().set(UserAgent::new("checkpwn - cargo utility tool for HIBP"));
+            
+            
+            let get_acc = client.request(requester).map(|res| {
+                res.status()
+            });
+
+            let get_paste = client.request(requester_paste).map(|res| {
+                res.status()
+            });
+
+            let work = get_acc.join(get_paste);
+            let (acc_stat, paste_stat) = core.run(work).expect("Failed to initialize Tokio core");
+            // Return breach report
+            evaluate_breach(acc_stat, paste_stat, data_search.to_owned());
+        }
+
+        if option_arg.to_owned() == PASSWORD {
+
+            let url = arg_to_api_route(option_arg.to_owned(), data_search.to_owned());
+            let mut requester: Request = Request::new(Method::Get, url);
+            requester.headers_mut().set(UserAgent::new("checkpwn - cargo utility tool for HIBP"));
+            
+            let work = client.request(requester).and_then(|res| {
 
             let status_code = res.status();
                 
@@ -251,11 +277,12 @@ fn main() {
                     } else { breach_report(StatusCode::NotFound, data_search.to_owned()); }
                 }
                     
-                Ok(())                
-            })
-        });
-        
-        core.run(work).expect("Failed to initialize Tokio core");
+                    Ok(())                
+                })
+            });
+
+            core.run(work).expect("Failed to initialize Tokio core");
+        }
     }
 }
 
