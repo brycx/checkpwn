@@ -6,22 +6,15 @@ Check [Have I Been Pwned](https://haveibeenpwned.com/) and see if it's time for 
 #### Install
 ```cargo install checkpwn```
 
-#### Check sites or pastes with email
-```checkpwn email test@example.com```
+#### Check an account, or list of accounts, for breaches:
+```checkpwn acc test@example.com```
 
-```checkpwn paste test@example.com```
+```checkpwn acc daily_breach_check.ls```
 
-#### Check sites or pastes with list of emails
-```checkpwn emaillist ./list.txt```
-
-```checkpwn pastelist ./list.txt```
+_NOTE: List files must have the .ls file exstension._
 
 #### Check a password
 ```checkpwn pass qwerty```
-
-#### Demo
-![alt text](screenshot/screen.png "Demo")
-
 
 _NOTE: Passwords are hashed with SHA1 before calling the Have I Been Pwned API.
 They store passwords as SHA1 hashes and will compute it themselves if this tool didn't.

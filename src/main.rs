@@ -4,19 +4,17 @@ extern crate hyper_tls;
 extern crate tokio_core;
 extern crate colored;
 extern crate sha1;
+#[cfg(test)]
+extern crate assert_cli;
 
 use std::io::{BufReader, BufRead, Error};
 use std::fs::File;
 use std::{thread, time, env};
-
 use futures::{Future, Stream};
-
 use tokio_core::reactor::Core;
-
 use hyper::{Client, Request, Method, StatusCode, Chunk};
 use hyper::header::UserAgent;
 use hyper_tls::HttpsConnector;
-
 use colored::*;
 
 
@@ -299,26 +297,26 @@ fn main() {
 #[test]
 fn test_sha1() {
     let hash = hash_password("qwerty");
-    assert_eq!(hash, "b1b3773a05c0ed0176787a4f1574ff0075f7521e");
+    assert_eq!(hash, "b1b3773a05c0ed0176787a4f1574ff0075f7521e".to_uppercase());
 }
 
 #[test]
 fn test_make_req() {
 
     // API paths taken from https://haveibeenpwned.com/API/v2
-    let first_path = make_req(
+    let first_path = format_req(
         "https://haveibeenpwned.com/api/v2/breachedaccount/",
         "test@example.com",
         None,
         None
     );
-    let second_path = make_req(
+    let second_path = format_req(
         "https://haveibeenpwned.com/api/v2/breachedaccount/",
         "test@example.com",
         Some("includeUnverified=true"),
         None
     );
-    let third_path = make_req(
+    let third_path = format_req(
         "https://haveibeenpwned.com/api/v2/breachedaccount/",
         "test@example.com",
         Some("includeUnverified=true"),
@@ -350,4 +348,22 @@ fn test_invalid_argument() {
 
     arg_to_api_route(option_arg, data_search);
     
+}
+
+#[test]
+fn test_cli_acc() {
+
+    assert_cli::Assert::command(&["cargo", "run", "acc", "test@example.com"])
+        .stdout().contains("BREACH FOUND")
+        .unwrap();
+}
+
+#[test]
+#[should_panic]
+// Doing the reverse, since I'm unsure how the coloreed module affects this
+fn test_cli_acc_fail() {
+
+    assert_cli::Assert::command(&["cargo", "run", "acc", "test@example.com"])
+        .stdout().contains("NO BREACH FOUND")
+        .unwrap();
 }
