@@ -219,7 +219,7 @@ fn main() {
     }
 
     let option_arg = &argvs[1].to_lowercase();
-    let data_search = &argvs[2].to_lowercase();
+    let data_search = &argvs[2];
 
     if data_search.to_owned().ends_with(".ls") {
         
@@ -252,7 +252,7 @@ fn main() {
 
         let (requester_acc, requester_paste) = breach_request(data_search, option_arg);
         
-        if option_arg.to_owned() == ACCOUNT {          
+        if option_arg.to_owned() == ACCOUNT {        
             
             let get_acc = client.request(requester_acc).map(|res| {
                 res.status()
