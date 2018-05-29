@@ -18,7 +18,6 @@ use hyper_tls::HttpsConnector;
 use colored::*;
 
 
-
 struct ApiRoutes {
     acc_route: String,
     password_route: String,
@@ -69,7 +68,7 @@ fn arg_to_api_route(arg: String, input_data: String) -> hyper::Uri {
     } else if arg == PASSWORD_SHA1 {
         uri = format_req(
             &hibp_api.password_route,
-            &hash_password(&input_data),
+            &hash_password(&input_data)[..5],
             Some(&hibp_queries.password_is_sha1),
             None
         );
@@ -80,7 +79,7 @@ fn arg_to_api_route(arg: String, input_data: String) -> hyper::Uri {
             None,
             None,
         );
-    } else { panic!("Invalid option {}", arg) }
+    } else { panic!("Invalid option {}", arg); }
 
     uri
 } 
@@ -182,26 +181,29 @@ fn search_in_range(search_space: Vec<String>, search_key: String) -> bool {
 /// Return a breach report based on two StatusCodes, both need to be false to be a non-breach.
 fn evaluate_breach(acc_stat: StatusCode, paste_stat: StatusCode, search_key: String) -> () {
     // Only if both StatusCodes for sites and paste is 404, will it
-    // return NO BREACH FOUND, else BREACH FOUND 
+    // return NO BREACH FOUND, else BREACH FOUND
+    // Or if the paste request was done using a non-email, then it will be a 400
     match (acc_stat, paste_stat) {
-        (StatusCode::NotFound, StatusCode::NotFound) => breach_report(StatusCode::NotFound, search_key),
-        _ => breach_report(StatusCode::Ok, search_key)
+        (StatusCode::NotFound, StatusCode::NotFound) => { breach_report(StatusCode::NotFound, search_key); },
+        (StatusCode::NotFound, StatusCode::BadRequest) => { breach_report(StatusCode::NotFound, search_key); },
+        _ => { breach_report(StatusCode::Ok, search_key); }
     }
 }
 
 /// Make API request for both paste and a command line argument.
-fn breach_request(url: &str, option_arg: &str) -> (hyper::Request, hyper::Request) {
+fn breach_request(searchterm: &str, option_arg: &str) -> (hyper::Request, hyper::Request) {
     
     // URI for quering password range, or account, API
-    let uri = arg_to_api_route(option_arg.to_owned(), url.to_owned());
+    let uri = arg_to_api_route(option_arg.to_owned(), searchterm.to_owned());
     let mut requester_acc: Request = Request::new(Method::Get, uri);
     requester_acc.headers_mut().set(UserAgent::new("checkpwn - cargo utility tool for HIBP"));
 
     // URI for quering paste API
-    let uri_paste = arg_to_api_route("paste".to_owned(), url.to_owned());
+    let uri_paste = arg_to_api_route("paste".to_owned(), searchterm.to_owned());
     let mut requester_paste: Request = Request::new(Method::Get, uri_paste);
     requester_paste.headers_mut().set(UserAgent::new("checkpwn - cargo utility tool for HIBP"));
 
+        
     (requester_acc, requester_paste)
 }
 
@@ -253,7 +255,7 @@ fn main() {
         let (requester_acc, requester_paste) = breach_request(data_search, option_arg);
         
         if option_arg.to_owned() == ACCOUNT {        
-            
+
             let get_acc = client.request(requester_acc).map(|res| {
                 res.status()
             });
