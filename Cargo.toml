@@ -1,6 +1,6 @@
 [package]
 name = "checkpwn"
-version = "0.0.5"
+version = "0.0.6"
 authors = ["brycx <brycx@protonmail.com>"]
 description = "Check Have I Been Pwned and see if it's time for you to change passwords."
 keywords = [ "cli", "password", "security", "HIBP" ]
@@ -9,15 +9,11 @@ readme = "README.md"
 repository = "https://github.com/brycx/checkpwn"
 license = "MIT"
 
-
 [dependencies]
-futures = "0.2"
-hyper = "0.12"
-hyper-tls = "0.2"
-tokio = "0.1.6"
 colored = "1.6"
 sha-1 = "0.7.0"
 hex = "0.3.2"
+reqwest = "0.8.6"
 
 [dev-dependencies]
 assert_cli = "0.6"

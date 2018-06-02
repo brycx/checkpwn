@@ -1,16 +1,15 @@
-extern crate colored;
-extern crate hyper;
 extern crate sha1;
 extern crate hex;
+extern crate reqwest;
+extern crate colored;
+pub mod util;
 
 use self::colored::Colorize;
-use hyper::{Request, StatusCode, Body};
 use self::sha1::{Sha1, Digest};
 use std::io::{BufReader, Error};
 use std::fs::File;
-
-
-pub mod util;
+use reqwest::header::UserAgent;
+use reqwest::StatusCode;
 
 struct ApiRoutes {
     acc_route: String,
@@ -26,7 +25,7 @@ struct Query {
 pub static ACCOUNT: &'static str = "acc";
 pub static PASSWORD: &'static str = "pass";
 
-pub fn arg_to_api_route(arg: String, input_data: String) -> hyper::Uri {
+pub fn arg_to_api_route(arg: String, input_data: String) -> String {
 
     let hibp_api = ApiRoutes {
         acc_route: String::from("https://haveibeenpwned.com/api/v2/breachedaccount/"),
@@ -39,7 +38,7 @@ pub fn arg_to_api_route(arg: String, input_data: String) -> hyper::Uri {
         truncate_response: String::from("truncateResponse=true"),
     };
 
-    let uri: hyper::Uri;
+    let uri: String;
 
     if arg == ACCOUNT {
         uri = format_req(
@@ -69,7 +68,7 @@ pub fn arg_to_api_route(arg: String, input_data: String) -> hyper::Uri {
 }
 
 /// Format an API request to fit multiple parameters
-pub fn format_req(p1: &str, p2: &str, p3: Option<&str>, p4: Option<&str>) -> hyper::Uri {
+pub fn format_req(p1: &str, p2: &str, p3: Option<&str>, p4: Option<&str>) -> String {
 
     let mut request = String::new();
 
@@ -92,7 +91,7 @@ pub fn format_req(p1: &str, p2: &str, p3: Option<&str>, p4: Option<&str>) -> hyp
         None => (),
     };
 
-    request.parse().expect("Failed to parse URL")
+    request
 }
 
 /// Take hyper::Response from quering password range API and split i into vector of strings.
@@ -138,44 +137,40 @@ pub fn evaluate_breach(acc_stat: StatusCode, paste_stat: StatusCode, search_key:
     // return NO BREACH FOUND, else BREACH FOUND
     // Or if the paste request was done using a non-email, then it will be a 400
     match (acc_stat, paste_stat) {
-        (StatusCode::NOT_FOUND, StatusCode::NOT_FOUND) => { breach_report(StatusCode::NOT_FOUND, search_key); },
-        (StatusCode::NOT_FOUND, StatusCode::BAD_REQUEST) => { breach_report(StatusCode::NOT_FOUND, search_key); },
-        _ => { breach_report(StatusCode::OK, search_key); }
+        (StatusCode::NotFound, StatusCode::NotFound) => { breach_report(StatusCode::NotFound, search_key); },
+        (StatusCode::NotFound, StatusCode::BadRequest) => { breach_report(StatusCode::NotFound, search_key); },
+        _ => { breach_report(StatusCode::Ok, search_key); }
     }
 }
 
 /// Make API request for both paste and a command line argument.
-pub fn breach_request(searchterm: &str, option_arg: &str) -> (hyper::Request<Body>, hyper::Request<Body>) {
+pub fn breach_request(searchterm: &str, option_arg: &str) -> () {
     
     // URI for quering password range, or account, API
-    let uri = arg_to_api_route(option_arg.to_owned(), searchterm.to_owned());
+    let uri_acc = arg_to_api_route(option_arg.to_owned(), searchterm.to_owned());
     // URI for quering paste API
     let uri_paste = arg_to_api_route("paste".to_owned(), searchterm.to_owned());
 
-    let requester_acc = Request::builder()
-        .method("GET")
-        .uri(uri)
-        .header("User-Agent", "checkpwn - cargo utility tool for hibp")
-        .body(Body::empty())
-        .unwrap();
-    let requester_paste = Request::builder()
-        .method("GET")
-        .uri(uri_paste)
-        .header("User-Agent", "checkpwn - cargo utility tool for hibp")
-        .body(Body::empty())
-        .unwrap();
+    let client = reqwest::Client::new();
 
-    (requester_acc, requester_paste)
+    let acc_stat = client.get(&uri_acc)
+        .header(UserAgent::new("checkpwn - cargo utility tool for hibp"))
+        .send().unwrap();
+    let paste_stat = client.get(&uri_paste)
+        .header(UserAgent::new("checkpwn - cargo utility tool for hibp"))
+        .send().unwrap();
+    
+    evaluate_breach(acc_stat.status(), paste_stat.status(), searchterm.to_owned())
 }
 
 /// Make a breach report based on StatusCode and print result.
-pub fn breach_report(status_code: hyper::StatusCode, searchterm: String) {
+pub fn breach_report(status_code: StatusCode, searchterm: String) {
     
     match status_code {
-        StatusCode::NOT_FOUND => {
+        StatusCode::NotFound => {
             println!("Breach status for {}: {}", searchterm.cyan(), "NO BREACH FOUND".green());
         },
-        StatusCode::OK => {
+        StatusCode::Ok => {
             println!("Breach status for {}: {}", searchterm.cyan(), "BREACH FOUND".red());
         },
         _ => panic!("Unrecognized status code detected")
