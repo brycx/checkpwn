@@ -5,6 +5,7 @@ extern crate tokio;
 #[cfg(test)]
 extern crate assert_cli;
 
+
 pub mod api;
 
 use std::{thread, time, env};
@@ -33,6 +34,7 @@ fn main() {
         let file = api::read_file(&data_search).unwrap();
 
         for line_iter in file.lines() {
+
             let line = line_iter.unwrap();
 
             let (requester_acc, requester_paste) = api::breach_request(&line, &option_arg);
@@ -48,10 +50,11 @@ fn main() {
             let work = get_acc.join(get_paste);
             let (acc_stat, paste_stat) = tokio::executor::current_thread::block_on_all(work).expect("Failed to run Tokio core");
             // Return breach report
+
             api::evaluate_breach(acc_stat, paste_stat, line);
 
             // Only one request every 1500 miliseconds from any given IP
-            thread::sleep(time::Duration::from_millis(1600));       
+            thread::sleep(time::Duration::from_millis(1600));
         }
     }
 
@@ -59,7 +62,7 @@ fn main() {
 
         let (requester_acc, requester_paste) = api::breach_request(&data_search, &option_arg);
         
-        if option_arg.to_owned() == api::ACCOUNT {        
+        if option_arg.to_owned() == api::ACCOUNT {
 
             let get_acc = client.request(requester_acc).map(|res| {
                 res.status()
