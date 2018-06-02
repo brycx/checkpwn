@@ -1,10 +1,10 @@
 extern crate colored;
 extern crate hyper;
 extern crate sha1;
+extern crate hex;
 
 use self::colored::Colorize;
-use hyper::header::UserAgent;
-use hyper::{Request, Method, StatusCode};
+use hyper::{Request, StatusCode, Body};
 use self::sha1::{Sha1, Digest};
 use std::io::{BufReader, Error};
 use std::fs::File;
@@ -145,19 +145,26 @@ pub fn evaluate_breach(acc_stat: StatusCode, paste_stat: StatusCode, search_key:
 }
 
 /// Make API request for both paste and a command line argument.
-pub fn breach_request(searchterm: &str, option_arg: &str) -> (hyper::Request, hyper::Request) {
+pub fn breach_request(searchterm: &str, option_arg: &str) -> (hyper::Request<Body>, hyper::Request<Body>) {
     
     // URI for quering password range, or account, API
     let uri = arg_to_api_route(option_arg.to_owned(), searchterm.to_owned());
-    let mut requester_acc: Request = Request::new(Method::Get, uri);
-    requester_acc.headers_mut().set(UserAgent::new("checkpwn - cargo utility tool for HIBP"));
-
     // URI for quering paste API
     let uri_paste = arg_to_api_route("paste".to_owned(), searchterm.to_owned());
-    let mut requester_paste: Request = Request::new(Method::Get, uri_paste);
-    requester_paste.headers_mut().set(UserAgent::new("checkpwn - cargo utility tool for HIBP"));
 
-        
+    let requester_acc = Request::builder()
+        .method("GET")
+        .uri(uri)
+        .header("User-Agent", "checkpwn - cargo utility tool for hibp")
+        .body(Body::empty())
+        .unwrap();
+    let requester_paste = Request::builder()
+        .method("GET")
+        .uri(uri_paste)
+        .header("User-Agent", "checkpwn - cargo utility tool for hibp")
+        .body(Body::empty())
+        .unwrap();
+
     (requester_acc, requester_paste)
 }
 
@@ -242,8 +249,7 @@ pub fn hash_password(password: &str) -> String {
     sha_digest.input(password.as_bytes());
     // Make uppercase for easier comparison with
     // HIBP API response
-    sha_digest.result_str().to_uppercase()
-
+    hex::encode(sha_digest.result()).to_uppercase()
 }
 
 #[test]
