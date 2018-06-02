@@ -1,9 +1,14 @@
 extern crate colored;
 extern crate hyper;
+extern crate sha1;
 
 use self::colored::Colorize;
 use hyper::header::UserAgent;
 use hyper::{Request, Method, StatusCode};
+use self::sha1::{Sha1, Digest};
+use std::io::{BufReader, Error};
+use std::fs::File;
+
 
 pub mod util;
 
@@ -47,7 +52,7 @@ pub fn arg_to_api_route(arg: String, input_data: String) -> hyper::Uri {
         uri = format_req(
             &hibp_api.password_route,
             // Only send the first 5 chars to the range API
-            &util::hash_password(&input_data)[..5],
+            &hash_password(&input_data)[..5],
             None,
             None,
         );
@@ -115,7 +120,7 @@ pub fn search_in_range(search_space: Vec<String>, search_key: String) -> bool {
     let mut res = false;
     // Don't include first five chars of own password, as this also
     // is how the HIBP API returns passwords
-    let hashed_key = String::from(&util::hash_password(&search_key)[5..]);
+    let hashed_key = String::from(&hash_password(&search_key)[5..]);
 
     for index in search_space {
         if index == hashed_key {
@@ -133,9 +138,9 @@ pub fn evaluate_breach(acc_stat: StatusCode, paste_stat: StatusCode, search_key:
     // return NO BREACH FOUND, else BREACH FOUND
     // Or if the paste request was done using a non-email, then it will be a 400
     match (acc_stat, paste_stat) {
-        (StatusCode::NotFound, StatusCode::NotFound) => { breach_report(StatusCode::NotFound, search_key); },
-        (StatusCode::NotFound, StatusCode::BadRequest) => { breach_report(StatusCode::NotFound, search_key); },
-        _ => { breach_report(StatusCode::Ok, search_key); }
+        (StatusCode::NOT_FOUND, StatusCode::NOT_FOUND) => { breach_report(StatusCode::NOT_FOUND, search_key); },
+        (StatusCode::NOT_FOUND, StatusCode::BAD_REQUEST) => { breach_report(StatusCode::NOT_FOUND, search_key); },
+        _ => { breach_report(StatusCode::OK, search_key); }
     }
 }
 
@@ -160,10 +165,10 @@ pub fn breach_request(searchterm: &str, option_arg: &str) -> (hyper::Request, hy
 pub fn breach_report(status_code: hyper::StatusCode, searchterm: String) {
     
     match status_code {
-        StatusCode::NotFound => {
+        StatusCode::NOT_FOUND => {
             println!("Breach status for {}: {}", searchterm.cyan(), "NO BREACH FOUND".green());
         },
-        StatusCode::Ok => {
+        StatusCode::OK => {
             println!("Breach status for {}: {}", searchterm.cyan(), "BREACH FOUND".red());
         },
         _ => panic!("Unrecognized status code detected")
@@ -219,4 +224,30 @@ fn test_invalid_argument() {
 
     arg_to_api_route(option_arg, data_search);
     
+}
+
+/// Read file into buffer.
+pub fn read_file(path: &str) -> Result<BufReader<File>, Error> {
+
+    let file_path = File::open(path).unwrap();
+    let file = BufReader::new(file_path);
+
+    Ok(file)
+}
+
+/// Return SHA1 digest of string.
+pub fn hash_password(password: &str) -> String {
+
+    let mut sha_digest = Sha1::default();
+    sha_digest.input(password.as_bytes());
+    // Make uppercase for easier comparison with
+    // HIBP API response
+    sha_digest.result_str().to_uppercase()
+
+}
+
+#[test]
+fn test_sha1() {
+    let hash = hash_password("qwerty");
+    assert_eq!(hash, "b1b3773a05c0ed0176787a4f1574ff0075f7521e".to_uppercase());
 }

@@ -32,7 +32,7 @@ fn main() {
 
     if data_search.to_owned().ends_with(".ls") {
         
-        let file = api::util::read_file(data_search).unwrap();
+        let file = api::read_file(data_search).unwrap();
 
         for line_iter in file.lines() {
             let line = line_iter.unwrap();
@@ -90,7 +90,7 @@ fn main() {
                         
                         if breach_bool == true {
                             api::breach_report(status_code, data_search.to_owned());
-                        } else { api::breach_report(StatusCode::NotFound, data_search.to_owned()); }
+                        } else { api::breach_report(StatusCode::NOT_FOUND, data_search.to_owned()); }
                     }   
                     
                     Ok(())                
