@@ -27,12 +27,10 @@ struct ApiRoutes {
 struct Query {
     include_unverified: String,
     truncate_response: String,
-    password_is_sha1: String,
 }
 
 static ACCOUNT: &'static str = "acc";
 static PASSWORD: &'static str = "pass";
-static PASSWORD_SHA1: &'static str = "sha1pass";
 
 fn arg_to_api_route(arg: String, input_data: String) -> hyper::Uri {
 
@@ -45,7 +43,6 @@ fn arg_to_api_route(arg: String, input_data: String) -> hyper::Uri {
     let hibp_queries = Query {
         include_unverified: String::from("includeUnverified=true"),
         truncate_response: String::from("truncateResponse=true"),
-        password_is_sha1: String::from("originalPasswordIsAHash=true"),
     };
 
     let uri: hyper::Uri;
@@ -64,13 +61,6 @@ fn arg_to_api_route(arg: String, input_data: String) -> hyper::Uri {
             &hash_password(&input_data)[..5],
             None,
             None,
-        );
-    } else if arg == PASSWORD_SHA1 {
-        uri = format_req(
-            &hibp_api.password_route,
-            &hash_password(&input_data)[..5],
-            Some(&hibp_queries.password_is_sha1),
-            None
         );
     } else if arg == "paste" {
         uri = format_req(
