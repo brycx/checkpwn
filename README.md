@@ -6,6 +6,9 @@ Check [Have I Been Pwned](https://haveibeenpwned.com/) and see if it's time for 
 #### Install
 ```cargo install checkpwn```
 
+#### Update
+```cargo install --force checkpwn```
+
 #### Check an account, or list of accounts, for breaches:
 ```checkpwn acc test@example.com```
 
