@@ -2,7 +2,6 @@ extern crate sha1;
 extern crate hex;
 extern crate reqwest;
 extern crate colored;
-pub mod util;
 
 use self::colored::Colorize;
 use self::sha1::{Sha1, Digest};
@@ -132,14 +131,17 @@ pub fn search_in_range(search_space: Vec<String>, search_key: String) -> bool {
 
 
 /// Return a breach report based on two StatusCodes, both need to be false to be a non-breach.
-pub fn evaluate_breach(acc_stat: StatusCode, paste_stat: StatusCode, search_key: String) -> () {
+pub fn evaluate_breach(acc_stat: StatusCode, paste_stat: StatusCode, search_key: String) -> ((), String) {
     // Only if both StatusCodes for sites and paste is 404, will it
     // return NO BREACH FOUND, else BREACH FOUND
     // Or if the paste request was done using a non-email, then it will be a 400
     match (acc_stat, paste_stat) {
-        (StatusCode::NotFound, StatusCode::NotFound) => { breach_report(StatusCode::NotFound, search_key); },
-        (StatusCode::NotFound, StatusCode::BadRequest) => { breach_report(StatusCode::NotFound, search_key); },
-        _ => { breach_report(StatusCode::Ok, search_key); }
+        (StatusCode::NotFound, StatusCode::NotFound) => { breach_report(StatusCode::NotFound, search_key) },
+        // NotFound and BadRequest - don't need the opposite, since the account API both takes username and emails
+        // whereas the paste API only takes emails. TODO: Check search_key instead
+        (StatusCode::NotFound, StatusCode::BadRequest) => { breach_report(StatusCode::NotFound, search_key) },
+        (StatusCode::BadRequest, StatusCode::BadRequest) => { panic!("HIBP returned Bad Request on account: {} - Make sure it is a valid account.", &search_key); },
+        _ => { breach_report(StatusCode::Ok, search_key) }
     }
 }
 
@@ -160,18 +162,23 @@ pub fn breach_request(searchterm: &str, option_arg: &str) -> () {
         .header(UserAgent::new("checkpwn - cargo utility tool for hibp"))
         .send().unwrap();
     
-    evaluate_breach(acc_stat.status(), paste_stat.status(), searchterm.to_owned())
+    evaluate_breach(acc_stat.status(), paste_stat.status(), searchterm.to_owned());
 }
 
 /// Make a breach report based on StatusCode and print result.
-pub fn breach_report(status_code: StatusCode, searchterm: String) {
+pub fn breach_report(status_code: StatusCode, searchterm: String) -> ((), String) {
+
+    let breach_found = String::from("BREACH FOUND");
+    let breach_not_found = String::from("NO BREACH FOUND");
     
     match status_code {
-        StatusCode::NotFound => {
-            println!("Breach status for {}: {}", searchterm.cyan(), "NO BREACH FOUND".green());
+        StatusCode::NotFound => { 
+            (println!("Breach status for {}: {}", searchterm.cyan(), "NO BREACH FOUND".green()), 
+            breach_not_found)
         },
-        StatusCode::Ok => {
-            println!("Breach status for {}: {}", searchterm.cyan(), "BREACH FOUND".red());
+        StatusCode::Ok => { 
+            (println!("Breach status for {}: {}", searchterm.cyan(), "BREACH FOUND".red()), 
+            breach_found)
         },
         _ => panic!("Unrecognized status code detected")
     }
@@ -251,4 +258,29 @@ pub fn hash_password(password: &str) -> String {
 fn test_sha1() {
     let hash = hash_password("qwerty");
     assert_eq!(hash, "b1b3773a05c0ed0176787a4f1574ff0075f7521e".to_uppercase());
+}
+
+#[test]
+fn test_evaluate_breach_good() {
+    
+    let (_, ok_ok) = evaluate_breach(StatusCode::Ok, StatusCode::Ok, "search_key".to_owned());
+    let (_, ok_notfound) = evaluate_breach(StatusCode::Ok, StatusCode::NotFound, "search_key".to_owned());
+    let (_, notfound_ok) = evaluate_breach(StatusCode::NotFound, StatusCode::Ok, "search_key".to_owned());
+    let (_, ok_badrequest) = evaluate_breach(StatusCode::Ok, StatusCode::BadRequest, "search_key".to_owned());
+    let (_, notfound_badrequest) = evaluate_breach(StatusCode::NotFound, StatusCode::BadRequest, "search_key".to_owned());
+    let (_, notfound_notfound) = evaluate_breach(StatusCode::NotFound, StatusCode::NotFound, "search_key".to_owned());
+
+    assert_eq!(ok_ok, "BREACH FOUND");
+    assert_eq!(ok_notfound, "BREACH FOUND");
+    assert_eq!(notfound_ok, "BREACH FOUND");
+    assert_eq!(ok_badrequest, "BREACH FOUND");
+    assert_eq!(notfound_badrequest, "NO BREACH FOUND");
+    assert_eq!(notfound_notfound, "NO BREACH FOUND");
+
+}
+
+#[test]
+#[should_panic]
+fn test_evaluate_breach_panic() {
+    let badrequest_badrequest = evaluate_breach(StatusCode::BadRequest, StatusCode::BadRequest, "search_key".to_owned());
 }
