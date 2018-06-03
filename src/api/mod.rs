@@ -135,13 +135,16 @@ pub fn breach_report(status_code: StatusCode, searchterm: String) -> ((), String
 /// Return a breach report based on two StatusCodes, both need to be false to be a non-breach.
 pub fn evaluate_breach(acc_stat: StatusCode, paste_stat: StatusCode, search_key: String) -> ((), String) {
 
+    let err = "HIBP returned Bad Request on account: ".to_string() + &search_key + " - Make sure it is a valid account.";
+
     match (acc_stat, paste_stat) {
         (StatusCode::NotFound, StatusCode::NotFound) => { breach_report(StatusCode::NotFound, search_key) },
         (StatusCode::NotFound, StatusCode::BadRequest) => { breach_report(StatusCode::NotFound, search_key) },
-        (StatusCode::BadRequest, StatusCode::BadRequest) => { panic!("HIBP returned Bad Request on account: {} - Make sure it is a valid account.", &search_key); },
+        (StatusCode::BadRequest, StatusCode::BadRequest) => { panic!(err); },
         // Since the account API both takes username and emails and situation where BadRequest and NotFound are
         // returned should never occur.
-        (StatusCode::BadRequest, StatusCode::NotFound) => { panic!("HIBP returned Bad Request on account: {} - Make sure it is a valid account.", &search_key); },
+        (StatusCode::BadRequest, StatusCode::NotFound) => { panic!(err); },
+        (StatusCode::BadRequest, StatusCode::Ok) => { panic!(err); },
         _ => { breach_report(StatusCode::Ok, search_key) }
     }
 }
@@ -220,7 +223,13 @@ fn test_evaluate_breach_panic() {
 #[test]
 #[should_panic]
 fn test_evaluate_breach_panic_2() {
-    let _badrequest_notfound = evaluate_breach(StatusCode::BadRequest, StatusCode::BadRequest, "search_key".to_owned());
+    let _badrequest_notfound = evaluate_breach(StatusCode::BadRequest, StatusCode::NotFound, "search_key".to_owned());
+}
+
+#[test]
+#[should_panic]
+fn test_evaluate_breach_panic_3() {
+    let _badrequest_ok = evaluate_breach(StatusCode::BadRequest, StatusCode::Ok, "search_key".to_owned());
 }
 
 #[test]
