@@ -25,7 +25,6 @@ fn main() {
 
     let data_search = argvs[2].to_owned();
 
-
     if data_search.to_owned().ends_with(".ls") {
         
         let file = api::read_file(&data_search).unwrap();
@@ -58,14 +57,11 @@ fn main() {
 
             let status_code = pass_stat.status();
             let pass_body = pass_stat.text().unwrap();
-                                       
-            if option_arg.to_owned() == api::PASSWORD {
-                    
-                let breach_bool = api::search_in_range(api::split_range(&pass_body.as_bytes().to_vec()), data_search.to_owned());
-                        
-                if breach_bool == true {
-                    api::breach_report(status_code, data_search.to_owned());
-                } else { api::breach_report(StatusCode::NotFound, data_search.to_owned()); }
+            let breach_bool = api::search_in_range(api::split_range(&pass_body.as_bytes().to_vec()), data_search.to_owned());        
+            
+            match breach_bool {
+                true => { api::breach_report(status_code, data_search.to_owned()); },
+                false => { api::breach_report(StatusCode::NotFound, data_search.to_owned()); }
             }
         }
     }

@@ -10,17 +10,6 @@ use std::fs::File;
 use reqwest::header::UserAgent;
 use reqwest::StatusCode;
 
-struct ApiRoutes {
-    acc_route: String,
-    password_route: String,
-    paste_route: String,
-}
-
-struct Query {
-    include_unverified: String,
-    truncate_response: String,
-}
-
 pub const ACCOUNT: &'static str = "acc";
 pub const PASSWORD: &'static str = "pass";
 
@@ -54,44 +43,38 @@ pub fn format_req(p1: &str, p2: &str, p3: Option<&str>, p4: Option<&str>) -> Str
 /// Take the user supplied command line arugments and make a url for the HIBP API.
 pub fn arg_to_api_route(arg: String, input_data: String) -> String {
 
-    let hibp_api = ApiRoutes {
-        acc_route: String::from("https://haveibeenpwned.com/api/v2/breachedaccount/"),
-        password_route: String::from("https://api.pwnedpasswords.com/range/"),
-        paste_route: String::from("https://haveibeenpwned.com/api/v2/pasteaccount/"),
-    };
+    let acc_route = String::from("https://haveibeenpwned.com/api/v2/breachedaccount/");
+    let password_route = String::from("https://api.pwnedpasswords.com/range/");
+    let paste_route = String::from("https://haveibeenpwned.com/api/v2/pasteaccount/");
 
-    let hibp_queries = Query {
-        include_unverified: String::from("includeUnverified=true"),
-        truncate_response: String::from("truncateResponse=true"),
-    };
+    let include_unverified = String::from("includeUnverified=true");
+    let truncate_response = String::from("truncateResponse=true");
 
-    let uri: String;
-
-    if arg == ACCOUNT {
-        uri = format_req(
-            &hibp_api.acc_route,
-            &input_data,
-            Some(&hibp_queries.include_unverified),
-            Some(&hibp_queries.truncate_response)
-        );
-    } else if arg == PASSWORD {
-        uri = format_req(
-            &hibp_api.password_route,
-            // Only send the first 5 chars to the range API
-            &hash_password(&input_data)[..5],
-            None,
-            None,
-        );
-    } else if arg == "paste" {
-        uri = format_req(
-            &hibp_api.paste_route,
-            &input_data,
-            None,
-            None,
-        );
-    } else { panic!("Invalid option {}", arg); }
-
-    uri
+    match &arg as &str {
+        ACCOUNT => {
+            format_req(
+                &acc_route,
+                &input_data,
+                Some(&include_unverified),
+                Some(&truncate_response))
+        },
+        PASSWORD => {
+            format_req(
+                &password_route,
+                // Only send the first 5 chars to the range API
+                &hash_password(&input_data)[..5],
+                None,
+                None)
+        },
+        "paste" => {
+            format_req(
+                &paste_route,
+                &input_data,
+                None,
+                None)
+        },
+        _ => { panic!("Invalid option {}", arg) }
+    }
 }
 
 /// Take a response from quering password range API and split i into vector of strings.
