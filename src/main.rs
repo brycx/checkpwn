@@ -71,7 +71,6 @@ fn main() {
 
 #[test]
 fn test_cli_acc() {
-
     // Wait, so that test don't get blocked
     thread::sleep(time::Duration::from_millis(1600));       
 
@@ -85,10 +84,16 @@ fn test_cli_acc() {
 // Doing the reverse, since I'm unsure how the coloreed module affects this
 fn test_cli_acc_fail() {
 
-    // Wait, so that test don't get blocked
-    thread::sleep(time::Duration::from_millis(1600));
-
     assert_cli::Assert::command(&["cargo", "run", "acc", "test@example.com"])
+        .stdout().contains("NO BREACH FOUND")
+        .unwrap();
+}
+
+#[test]
+#[should_panic]
+fn test_cli_arg_fail() {
+
+    assert_cli::Assert::command(&["cargo", "run", "wrong", "test@example.com"])
         .stdout().contains("NO BREACH FOUND")
         .unwrap();
 }
