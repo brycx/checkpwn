@@ -24,6 +24,34 @@ struct Query {
 pub static ACCOUNT: &'static str = "acc";
 pub static PASSWORD: &'static str = "pass";
 
+/// Format an API request to fit multiple parameters
+pub fn format_req(p1: &str, p2: &str, p3: Option<&str>, p4: Option<&str>) -> String {
+
+    let mut request = String::new();
+
+    request.push_str(p1);
+    request.push_str(p2);
+
+    match p3 {
+        Some(ref path3) => {
+            request.push_str("?");
+            request.push_str(path3)
+        },
+        None => (),
+    };
+
+    match p4 {
+        Some(ref path4) => {
+            request.push_str("&");
+            request.push_str(path4)
+        },
+        None => (),
+    };
+
+    request
+}
+
+/// Take the user supplied command line arugments and make a url for the HIBP API.
 pub fn arg_to_api_route(arg: String, input_data: String) -> String {
 
     let hibp_api = ApiRoutes {
@@ -66,34 +94,7 @@ pub fn arg_to_api_route(arg: String, input_data: String) -> String {
     uri
 }
 
-/// Format an API request to fit multiple parameters
-pub fn format_req(p1: &str, p2: &str, p3: Option<&str>, p4: Option<&str>) -> String {
-
-    let mut request = String::new();
-
-    request.push_str(p1);
-    request.push_str(p2);
-
-    match p3 {
-        Some(ref path3) => {
-            request.push_str("?");
-            request.push_str(path3)
-        },
-        None => (),
-    };
-
-    match p4 {
-        Some(ref path4) => {
-            request.push_str("&");
-            request.push_str(path4)
-        },
-        None => (),
-    };
-
-    request
-}
-
-/// Take hyper::Response from quering password range API and split i into vector of strings.
+/// Take a response from quering password range API and split i into vector of strings.
 pub fn split_range(response: &[u8]) ->  Vec<String> {
 
     let range_string = String::from_utf8_lossy(response);
@@ -129,18 +130,35 @@ pub fn search_in_range(search_space: Vec<String>, search_key: String) -> bool {
     res
 }
 
+/// Make a breach report based on StatusCode and print result.
+pub fn breach_report(status_code: StatusCode, searchterm: String) -> ((), String) {
+
+    let breach_found = String::from("BREACH FOUND");
+    let breach_not_found = String::from("NO BREACH FOUND");
+    
+    match status_code {
+        StatusCode::NotFound => { 
+            (println!("Breach status for {}: {}", searchterm.cyan(), "NO BREACH FOUND".green()), 
+            breach_not_found)
+        },
+        StatusCode::Ok => { 
+            (println!("Breach status for {}: {}", searchterm.cyan(), "BREACH FOUND".red()), 
+            breach_found)
+        },
+        _ => panic!("Unrecognized status code detected")
+    }
+}
 
 /// Return a breach report based on two StatusCodes, both need to be false to be a non-breach.
 pub fn evaluate_breach(acc_stat: StatusCode, paste_stat: StatusCode, search_key: String) -> ((), String) {
-    // Only if both StatusCodes for sites and paste is 404, will it
-    // return NO BREACH FOUND, else BREACH FOUND
-    // Or if the paste request was done using a non-email, then it will be a 400
+
     match (acc_stat, paste_stat) {
         (StatusCode::NotFound, StatusCode::NotFound) => { breach_report(StatusCode::NotFound, search_key) },
-        // NotFound and BadRequest - don't need the opposite, since the account API both takes username and emails
-        // whereas the paste API only takes emails. TODO: Check search_key instead
         (StatusCode::NotFound, StatusCode::BadRequest) => { breach_report(StatusCode::NotFound, search_key) },
         (StatusCode::BadRequest, StatusCode::BadRequest) => { panic!("HIBP returned Bad Request on account: {} - Make sure it is a valid account.", &search_key); },
+        // Since the account API both takes username and emails and situation where BadRequest and NotFound are
+        // returned should never occur.
+        (StatusCode::BadRequest, StatusCode::NotFound) => { panic!("HIBP returned Bad Request on account: {} - Make sure it is a valid account.", &search_key); },
         _ => { breach_report(StatusCode::Ok, search_key) }
     }
 }
@@ -165,76 +183,6 @@ pub fn breach_request(searchterm: &str, option_arg: &str) -> () {
     evaluate_breach(acc_stat.status(), paste_stat.status(), searchterm.to_owned());
 }
 
-/// Make a breach report based on StatusCode and print result.
-pub fn breach_report(status_code: StatusCode, searchterm: String) -> ((), String) {
-
-    let breach_found = String::from("BREACH FOUND");
-    let breach_not_found = String::from("NO BREACH FOUND");
-    
-    match status_code {
-        StatusCode::NotFound => { 
-            (println!("Breach status for {}: {}", searchterm.cyan(), "NO BREACH FOUND".green()), 
-            breach_not_found)
-        },
-        StatusCode::Ok => { 
-            (println!("Breach status for {}: {}", searchterm.cyan(), "BREACH FOUND".red()), 
-            breach_found)
-        },
-        _ => panic!("Unrecognized status code detected")
-    }
-}
-
-
-#[test]
-fn test_make_req() {
-
-    // API paths taken from https://haveibeenpwned.com/API/v2
-    let first_path = format_req(
-        "https://haveibeenpwned.com/api/v2/breachedaccount/",
-        "test@example.com",
-        None,
-        None
-    );
-    let second_path = format_req(
-        "https://haveibeenpwned.com/api/v2/breachedaccount/",
-        "test@example.com",
-        Some("includeUnverified=true"),
-        None
-    );
-    let third_path = format_req(
-        "https://haveibeenpwned.com/api/v2/breachedaccount/",
-        "test@example.com",
-        Some("includeUnverified=true"),
-        Some("truncateResponse=true")
-    );
-
-    assert_eq!(first_path, "https://haveibeenpwned.com/api/v2/breachedaccount/test@example.com");
-    assert_eq!(second_path, "https://haveibeenpwned.com/api/v2/breachedaccount/test@example.com?includeUnverified=true");
-    assert_eq!(third_path, "https://haveibeenpwned.com/api/v2/breachedaccount/test@example.com?includeUnverified=true&truncateResponse=true");
-   
-}
-
-#[test]
-fn test_good_argument() {
-
-    let option_arg = String::from("acc");
-    let data_search = String::from("test@example.com");
-
-    arg_to_api_route(option_arg, data_search);
-    
-}
-
-#[should_panic]
-#[test]
-fn test_invalid_argument() {
-
-    let option_arg = String::from("badoption");
-    let data_search = String::from("test@example.com");
-
-    arg_to_api_route(option_arg, data_search);
-    
-}
-
 /// Read file into buffer.
 pub fn read_file(path: &str) -> Result<BufReader<File>, Error> {
 
@@ -253,6 +201,7 @@ pub fn hash_password(password: &str) -> String {
     // HIBP API response
     hex::encode(sha_digest.result()).to_uppercase()
 }
+
 
 #[test]
 fn test_sha1() {
@@ -282,5 +231,64 @@ fn test_evaluate_breach_good() {
 #[test]
 #[should_panic]
 fn test_evaluate_breach_panic() {
-    let badrequest_badrequest = evaluate_breach(StatusCode::BadRequest, StatusCode::BadRequest, "search_key".to_owned());
+    let _badrequest_badrequest = evaluate_breach(StatusCode::BadRequest, StatusCode::BadRequest, "search_key".to_owned());
+}
+
+#[test]
+#[should_panic]
+fn test_evaluate_breach_panic_2() {
+    let _badrequest_notfound = evaluate_breach(StatusCode::BadRequest, StatusCode::BadRequest, "search_key".to_owned());
+}
+
+#[test]
+fn test_make_req_and_arg_to_route() {
+
+    // API paths taken from https://haveibeenpwned.com/API/v2
+    let first_path = format_req(
+        "https://haveibeenpwned.com/api/v2/breachedaccount/",
+        "test@example.com",
+        None,
+        None
+    );
+    let second_path = format_req(
+        "https://haveibeenpwned.com/api/v2/breachedaccount/",
+        "test@example.com",
+        Some("includeUnverified=true"),
+        None
+    );
+    let third_path = format_req(
+        "https://haveibeenpwned.com/api/v2/breachedaccount/",
+        "test@example.com",
+        Some("includeUnverified=true"),
+        Some("truncateResponse=true")
+    );
+
+    assert_eq!(first_path, "https://haveibeenpwned.com/api/v2/breachedaccount/test@example.com");
+    assert_eq!(second_path, "https://haveibeenpwned.com/api/v2/breachedaccount/test@example.com?includeUnverified=true");
+    assert_eq!(third_path, "https://haveibeenpwned.com/api/v2/breachedaccount/test@example.com?includeUnverified=true&truncateResponse=true");
+    
+    assert_eq!(third_path, arg_to_api_route("acc".to_owned(), "test@example.com".to_owned()));
+    assert_eq!("https://api.pwnedpasswords.com/range/B1B37", arg_to_api_route("pass".to_owned(), "qwerty".to_owned()));
+    assert_eq!("https://haveibeenpwned.com/api/v2/pasteaccount/test@example.com", arg_to_api_route("paste".to_owned(), "test@example.com".to_owned()));
+}
+
+#[test]
+fn test_good_argument() {
+
+    let option_arg = String::from("acc");
+    let data_search = String::from("test@example.com");
+
+    arg_to_api_route(option_arg, data_search);
+    
+}
+
+#[should_panic]
+#[test]
+fn test_invalid_argument() {
+
+    let option_arg = String::from("badoption");
+    let data_search = String::from("test@example.com");
+
+    arg_to_api_route(option_arg, data_search);
+    
 }
