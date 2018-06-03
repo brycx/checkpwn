@@ -16,7 +16,15 @@ fn main() {
     }
 
     let option_arg = argvs[1].to_lowercase();
+    
+    match &option_arg as &str {
+        api::ACCOUNT => (),
+        api::PASSWORD => (),
+        _ => panic!("Usage: checkpwn acc test@example.com")
+    };
+
     let data_search = argvs[2].to_owned();
+
 
     if data_search.to_owned().ends_with(".ls") {
         

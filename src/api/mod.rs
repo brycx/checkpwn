@@ -21,8 +21,8 @@ struct Query {
     truncate_response: String,
 }
 
-pub static ACCOUNT: &'static str = "acc";
-pub static PASSWORD: &'static str = "pass";
+pub const ACCOUNT: &'static str = "acc";
+pub const PASSWORD: &'static str = "pass";
 
 /// Format an API request to fit multiple parameters
 pub fn format_req(p1: &str, p2: &str, p3: Option<&str>, p4: Option<&str>) -> String {
