@@ -31,7 +31,7 @@ fn main() {
 
         for line_iter in file.lines() {
 
-            let line = line_iter.unwrap();
+            let line = api::strip_white_new(line_iter.unwrap());
 
             match line.as_str() {
                 "\n" => continue,

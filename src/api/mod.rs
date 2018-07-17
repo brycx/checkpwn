@@ -91,7 +91,7 @@ pub fn split_range(response: &[u8]) ->  Vec<String> {
     for index in range_vector {
         final_vec.push(String::from(&index[..35]));
     }
-    
+
     final_vec
 }
 
@@ -118,14 +118,14 @@ pub fn breach_report(status_code: StatusCode, searchterm: String) -> ((), String
 
     let breach_found = String::from("BREACH FOUND");
     let breach_not_found = String::from("NO BREACH FOUND");
-    
+
     match status_code {
-        StatusCode::NotFound => { 
-            (println!("Breach status for {}: {}", searchterm.cyan(), "NO BREACH FOUND".green()), 
+        StatusCode::NotFound => {
+            (println!("Breach status for {}: {}", searchterm.cyan(), "NO BREACH FOUND".green()),
             breach_not_found)
         },
-        StatusCode::Ok => { 
-            (println!("Breach status for {}: {}", searchterm.cyan(), "BREACH FOUND".red()), 
+        StatusCode::Ok => {
+            (println!("Breach status for {}: {}", searchterm.cyan(), "BREACH FOUND".red()),
             breach_found)
         },
         _ => panic!("Unrecognized status code detected")
@@ -151,7 +151,7 @@ pub fn evaluate_breach(acc_stat: StatusCode, paste_stat: StatusCode, search_key:
 
 /// Make API request for both paste and a command line argument.
 pub fn breach_request(searchterm: &str, option_arg: &str) -> () {
-    
+
     // URI for quering password range, or account, API
     let uri_acc = arg_to_api_route(option_arg.to_owned(), searchterm.to_owned());
     // URI for quering paste API
@@ -165,7 +165,7 @@ pub fn breach_request(searchterm: &str, option_arg: &str) -> () {
     let paste_stat = client.get(&uri_paste)
         .header(UserAgent::new("checkpwn - cargo utility tool for hibp"))
         .send().unwrap();
-    
+
     evaluate_breach(acc_stat.status(), paste_stat.status(), searchterm.to_owned());
 }
 
@@ -188,6 +188,22 @@ pub fn hash_password(password: &str) -> String {
     hex::encode(sha_digest.result()).to_uppercase()
 }
 
+// Strip all whitespace and all newlines from a given string
+pub fn strip_white_new(string: String) -> String {
+    string.replace("\n", "").replace(" ", "").replace("\'", "'")
+}
+
+#[test]
+fn test_strip_white_new() {
+    let string_1 = String::from("fkljjsdjlksfdklj dfiwj wefwefwfe");
+    let string_2 = String::from("derbrererer\n");
+    let string_3 = String::from("dee\nwfweww   rb  tte rererer\n");
+
+    assert_eq!(&strip_white_new(string_1), "fkljjsdjlksfdkljdfiwjwefwefwfe");
+    assert_eq!(&strip_white_new(string_2), "derbrererer");
+    assert_eq!(&strip_white_new(string_3), "deewfwewwrbtterererer");
+}
+
 
 #[test]
 fn test_sha1() {
@@ -197,7 +213,7 @@ fn test_sha1() {
 
 #[test]
 fn test_evaluate_breach_good() {
-    
+
     let (_, ok_ok) = evaluate_breach(StatusCode::Ok, StatusCode::Ok, "search_key".to_owned());
     let (_, ok_notfound) = evaluate_breach(StatusCode::Ok, StatusCode::NotFound, "search_key".to_owned());
     let (_, notfound_ok) = evaluate_breach(StatusCode::NotFound, StatusCode::Ok, "search_key".to_owned());
@@ -258,7 +274,7 @@ fn test_make_req_and_arg_to_route() {
     assert_eq!(first_path, "https://haveibeenpwned.com/api/v2/breachedaccount/test@example.com");
     assert_eq!(second_path, "https://haveibeenpwned.com/api/v2/breachedaccount/test@example.com?includeUnverified=true");
     assert_eq!(third_path, "https://haveibeenpwned.com/api/v2/breachedaccount/test@example.com?includeUnverified=true&truncateResponse=true");
-    
+
     assert_eq!(third_path, arg_to_api_route("acc".to_owned(), "test@example.com".to_owned()));
     assert_eq!("https://api.pwnedpasswords.com/range/B1B37", arg_to_api_route("pass".to_owned(), "qwerty".to_owned()));
     assert_eq!("https://haveibeenpwned.com/api/v2/pasteaccount/test@example.com", arg_to_api_route("paste".to_owned(), "test@example.com".to_owned()));
@@ -271,7 +287,7 @@ fn test_good_argument() {
     let data_search = String::from("test@example.com");
 
     arg_to_api_route(option_arg, data_search);
-    
+
 }
 
 #[should_panic]
@@ -282,5 +298,5 @@ fn test_invalid_argument() {
     let data_search = String::from("test@example.com");
 
     arg_to_api_route(option_arg, data_search);
-    
+
 }
