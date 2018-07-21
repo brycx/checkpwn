@@ -96,15 +96,17 @@ pub fn search_in_range(search_space: Vec<String>, search_key: &str) -> bool {
 }
 
 /// Make a breach report based on StatusCode and print result.
-pub fn breach_report(status_code: StatusCode, searchterm: &str) -> ((), String) {
+pub fn breach_report(status_code: StatusCode, searchterm: &str, is_password: bool) -> ((), String) {
     let breach_found = String::from("BREACH FOUND");
     let breach_not_found = String::from("NO BREACH FOUND");
+    // Do not display password in terminal
+    let request_key = if is_password { "********" } else { searchterm };
 
     match status_code {
         StatusCode::NotFound => (
             println!(
                 "Breach status for {}: {}",
-                searchterm.cyan(),
+                request_key.cyan(),
                 "NO BREACH FOUND".green()
             ),
             breach_not_found,
@@ -112,7 +114,7 @@ pub fn breach_report(status_code: StatusCode, searchterm: &str) -> ((), String) 
         StatusCode::Ok => (
             println!(
                 "Breach status for {}: {}",
-                searchterm.cyan(),
+                request_key.cyan(),
                 "BREACH FOUND".red()
             ),
             breach_found,
@@ -133,10 +135,10 @@ pub fn evaluate_breach(
 
     match (acc_stat, paste_stat) {
         (StatusCode::NotFound, StatusCode::NotFound) => {
-            breach_report(StatusCode::NotFound, &search_key)
+            breach_report(StatusCode::NotFound, &search_key, false)
         }
         (StatusCode::NotFound, StatusCode::BadRequest) => {
-            breach_report(StatusCode::NotFound, &search_key)
+            breach_report(StatusCode::NotFound, &search_key, false)
         }
         (StatusCode::BadRequest, StatusCode::BadRequest) => {
             panic!(err);
@@ -149,7 +151,7 @@ pub fn evaluate_breach(
         (StatusCode::BadRequest, StatusCode::Ok) => {
             panic!(err);
         }
-        _ => breach_report(StatusCode::Ok, &search_key),
+        _ => breach_report(StatusCode::Ok, &search_key, false),
     }
 }
 

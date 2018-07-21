@@ -66,9 +66,9 @@ fn main() {
             );
 
             if breach_bool {
-                api::breach_report(status_code, &data_search);
+                api::breach_report(status_code, &data_search, true);
             } else {
-                api::breach_report(StatusCode::NotFound, &data_search);
+                api::breach_report(StatusCode::NotFound, &data_search, true);
             }
     }
 }
