@@ -47,29 +47,29 @@ fn main() {
             thread::sleep(time::Duration::from_millis(1600));
         }
     } else if option_arg == api::ACCOUNT {
-            api::breach_request(&data_search, &option_arg);
-            // Only one request every 1500 miliseconds from any given IP
-            thread::sleep(time::Duration::from_millis(1600));
+        api::breach_request(&data_search, &option_arg);
+        // Only one request every 1500 miliseconds from any given IP
+        thread::sleep(time::Duration::from_millis(1600));
     } else if option_arg == api::PASSWORD {
-            let client = reqwest::Client::new();
-            let uri_acc = api::arg_to_api_route(&option_arg, &data_search);
-            let mut pass_stat = client
-                .get(&uri_acc)
-                .header(UserAgent::new("checkpwn - cargo utility tool for hibp"))
-                .send()
-                .unwrap();
+        let client = reqwest::Client::new();
+        let uri_acc = api::arg_to_api_route(&option_arg, &data_search);
+        let mut pass_stat = client
+            .get(&uri_acc)
+            .header(UserAgent::new("checkpwn - cargo utility tool for hibp"))
+            .send()
+            .unwrap();
 
-            let status_code = pass_stat.status();
-            let pass_body = pass_stat.text().unwrap();
-            let breach_bool = api::search_in_range(
-                api::split_range(&pass_body.as_bytes().to_vec()), &data_search,
-            );
+        let status_code = pass_stat.status();
+        let pass_body = pass_stat.text().unwrap();
+        let breach_bool = api::search_in_range(
+            api::split_range(&pass_body.as_bytes().to_vec()), &data_search,
+        );
 
-            if breach_bool {
-                api::breach_report(status_code, &data_search, true);
-            } else {
-                api::breach_report(StatusCode::NotFound, &data_search, true);
-            }
+        if breach_bool {
+            api::breach_report(status_code, &data_search, true);
+        } else {
+            api::breach_report(StatusCode::NotFound, &data_search, true);
+        }
     }
 }
 
