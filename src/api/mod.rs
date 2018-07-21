@@ -13,18 +13,18 @@ use std::io::{BufReader, Error};
 pub const ACCOUNT: &str = "acc";
 pub const PASSWORD: &str = "pass";
 
-/// Format an API request to fit multiple parameters
+/// Format an API request to fit multiple parameters.
 pub fn format_req(p1: &str, p2: &str, p3: Option<&str>, p4: Option<&str>) -> String {
     let mut request = String::new();
-
     request.push_str(p1);
     request.push_str(p2);
 
+    // Start URL query
     if let Some(ref path3) = p3 {
         request.push_str("?");
         request.push_str(path3)
     };
-
+    // Multiple URL queries
     if let Some(ref path4) = p4 {
         request.push_str("&");
         request.push_str(path4)
@@ -33,7 +33,8 @@ pub fn format_req(p1: &str, p2: &str, p3: Option<&str>, p4: Option<&str>) -> Str
     request
 }
 
-/// Take the user supplied command line arugments and make a url for the HIBP API.
+/// Take the user-supplied command-line arugments and make a URL for the HIBP API. Also
+/// manages a call to the paste API route, which is done automatically on each "acc" call.
 pub fn arg_to_api_route(arg: &str, input_data: &str) -> String {
     let acc_route = String::from("https://haveibeenpwned.com/api/v2/breachedaccount/");
     let password_route = String::from("https://api.pwnedpasswords.com/range/");
@@ -49,21 +50,19 @@ pub fn arg_to_api_route(arg: &str, input_data: &str) -> String {
             Some(&include_unverified),
             Some(&truncate_response),
         ),
-        PASSWORD => {
-            format_req(
-                &password_route,
-                // Only send the first 5 chars to the range API
-                &hash_password(input_data)[..5],
-                None,
-                None,
-            )
-        }
+        PASSWORD => format_req(
+            &password_route,
+            // Only send the first 5 chars to the password range API
+            &hash_password(input_data)[..5],
+            None,
+            None,
+        ),
         "paste" => format_req(&paste_route, input_data, None, None),
         _ => panic!("Invalid option {}", arg),
     }
 }
 
-/// Take a response from quering password range API and split i into vector of strings.
+/// Take a response from quering password range API and split it into vector of strings.
 pub fn split_range(response: &[u8]) -> Vec<String> {
     let range_string = String::from_utf8_lossy(response);
 
@@ -80,15 +79,15 @@ pub fn split_range(response: &[u8]) -> Vec<String> {
     final_vec
 }
 
-/// Find matching key in recevied set of keys
+/// Find matching key in recevied set of keys.
 pub fn search_in_range(search_space: Vec<String>, search_key: &str) -> bool {
     let mut res = false;
     // Don't include first five chars of own password, as this also
     // is how the HIBP API returns passwords
     let hashed_key = String::from(&hash_password(search_key)[5..]);
 
-    for index in search_space {
-        if index == hashed_key {
+    for item in search_space {
+        if item == hashed_key {
             res = true;
         }
     }
@@ -118,7 +117,7 @@ pub fn breach_report(status_code: StatusCode, searchterm: &str) -> ((), String) 
             ),
             breach_found,
         ),
-        _ => panic!("Unrecognized status code detected"),
+        _ => panic!("Unrecognized StatusCode detected"),
     }
 }
 
@@ -142,8 +141,8 @@ pub fn evaluate_breach(
         (StatusCode::BadRequest, StatusCode::BadRequest) => {
             panic!(err);
         }
-        // Since the account API both takes username and emails and situation where BadRequest and NotFound are
-        // returned should never occur.
+        // Since the account API both takes username and emails and situation where BadRequest
+        // and NotFound arereturned should never occur.
         (StatusCode::BadRequest, StatusCode::NotFound) => {
             panic!(err);
         }
