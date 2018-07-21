@@ -124,7 +124,7 @@ pub fn breach_report(status_code: StatusCode, searchterm: &str, is_password: boo
 }
 
 /// Return a breach report based on two StatusCodes, both need to be false to be a non-breach.
-pub fn evaluate_breach(
+pub fn evaluate_acc_breach(
     acc_stat: StatusCode,
     paste_stat: StatusCode,
     search_key: &str,
@@ -175,7 +175,7 @@ pub fn breach_request(searchterm: &str, option_arg: &str) -> () {
         .send()
         .unwrap();
 
-    evaluate_breach(
+    evaluate_acc_breach(
         acc_stat.status(),
         paste_stat.status(),
         searchterm,
@@ -226,28 +226,28 @@ fn test_sha1() {
 
 #[test]
 fn test_evaluate_breach_good() {
-    let (_, ok_ok) = evaluate_breach(StatusCode::Ok, StatusCode::Ok, "search_key");
-    let (_, ok_notfound) = evaluate_breach(
+    let (_, ok_ok) = evaluate_acc_breach(StatusCode::Ok, StatusCode::Ok, "search_key");
+    let (_, ok_notfound) = evaluate_acc_breach(
         StatusCode::Ok,
         StatusCode::NotFound,
         "search_key",
     );
-    let (_, notfound_ok) = evaluate_breach(
+    let (_, notfound_ok) = evaluate_acc_breach(
         StatusCode::NotFound,
         StatusCode::Ok,
         "search_key",
     );
-    let (_, ok_badrequest) = evaluate_breach(
+    let (_, ok_badrequest) = evaluate_acc_breach(
         StatusCode::Ok,
         StatusCode::BadRequest,
         "search_key",
     );
-    let (_, notfound_badrequest) = evaluate_breach(
+    let (_, notfound_badrequest) = evaluate_acc_breach(
         StatusCode::NotFound,
         StatusCode::BadRequest,
         "search_key",
     );
-    let (_, notfound_notfound) = evaluate_breach(
+    let (_, notfound_notfound) = evaluate_acc_breach(
         StatusCode::NotFound,
         StatusCode::NotFound,
         "search_key",
@@ -264,7 +264,7 @@ fn test_evaluate_breach_good() {
 #[test]
 #[should_panic]
 fn test_evaluate_breach_panic() {
-    let _badrequest_badrequest = evaluate_breach(
+    let _badrequest_badrequest = evaluate_acc_breach(
         StatusCode::BadRequest,
         StatusCode::BadRequest,
         "search_key",
@@ -274,7 +274,7 @@ fn test_evaluate_breach_panic() {
 #[test]
 #[should_panic]
 fn test_evaluate_breach_panic_2() {
-    let _badrequest_notfound = evaluate_breach(
+    let _badrequest_notfound = evaluate_acc_breach(
         StatusCode::BadRequest,
         StatusCode::NotFound,
         "search_key",
@@ -284,7 +284,7 @@ fn test_evaluate_breach_panic_2() {
 #[test]
 #[should_panic]
 fn test_evaluate_breach_panic_3() {
-    let _badrequest_ok = evaluate_breach(
+    let _badrequest_ok = evaluate_acc_breach(
         StatusCode::BadRequest,
         StatusCode::Ok,
         "search_key",
