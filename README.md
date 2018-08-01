@@ -1,6 +1,11 @@
 ## checkpwn
 Check [Have I Been Pwned](https://haveibeenpwned.com/) and see if it's time for you to change passwords.
 
+
+#### Usage demo
+
+[![asciicast](https://asciinema.org/a/2LfYpj7V86CjbAB4tc2WcgJP6.png)](https://asciinema.org/a/2LfYpj7V86CjbAB4tc2WcgJP6)
+
 ### Getting started
 
 #### Install
