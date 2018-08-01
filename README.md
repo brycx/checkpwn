@@ -23,7 +23,7 @@ checkpwn acc test@example.com
 checkpwn acc daily_breach_check.ls
 ```
 
-_NOTE: List files must have the .ls file exstension._
+_NOTE: List files must have the .ls file extension._
 
 #### Check a password
 ```
