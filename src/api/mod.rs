@@ -175,11 +175,7 @@ pub fn breach_request(searchterm: &str, option_arg: &str) -> () {
         .send()
         .unwrap();
 
-    evaluate_acc_breach(
-        acc_stat.status(),
-        paste_stat.status(),
-        searchterm,
-    );
+    evaluate_acc_breach(acc_stat.status(), paste_stat.status(), searchterm);
 }
 
 /// Read file into buffer.
@@ -210,7 +206,10 @@ fn test_strip_white_new() {
     let string_2 = String::from("derbrererer\n");
     let string_3 = String::from("dee\nwfweww   rb  tte rererer\n");
 
-    assert_eq!(&strip_white_new(&string_1), "fkljjsdjlksfdkljdfiwjwefwefwfe");
+    assert_eq!(
+        &strip_white_new(&string_1),
+        "fkljjsdjlksfdkljdfiwjwefwefwfe"
+    );
     assert_eq!(&strip_white_new(&string_2), "derbrererer");
     assert_eq!(&strip_white_new(&string_3), "deewfwewwrbtterererer");
 }
@@ -227,31 +226,14 @@ fn test_sha1() {
 #[test]
 fn test_evaluate_breach_good() {
     let (_, ok_ok) = evaluate_acc_breach(StatusCode::Ok, StatusCode::Ok, "search_key");
-    let (_, ok_notfound) = evaluate_acc_breach(
-        StatusCode::Ok,
-        StatusCode::NotFound,
-        "search_key",
-    );
-    let (_, notfound_ok) = evaluate_acc_breach(
-        StatusCode::NotFound,
-        StatusCode::Ok,
-        "search_key",
-    );
-    let (_, ok_badrequest) = evaluate_acc_breach(
-        StatusCode::Ok,
-        StatusCode::BadRequest,
-        "search_key",
-    );
-    let (_, notfound_badrequest) = evaluate_acc_breach(
-        StatusCode::NotFound,
-        StatusCode::BadRequest,
-        "search_key",
-    );
-    let (_, notfound_notfound) = evaluate_acc_breach(
-        StatusCode::NotFound,
-        StatusCode::NotFound,
-        "search_key",
-    );
+    let (_, ok_notfound) = evaluate_acc_breach(StatusCode::Ok, StatusCode::NotFound, "search_key");
+    let (_, notfound_ok) = evaluate_acc_breach(StatusCode::NotFound, StatusCode::Ok, "search_key");
+    let (_, ok_badrequest) =
+        evaluate_acc_breach(StatusCode::Ok, StatusCode::BadRequest, "search_key");
+    let (_, notfound_badrequest) =
+        evaluate_acc_breach(StatusCode::NotFound, StatusCode::BadRequest, "search_key");
+    let (_, notfound_notfound) =
+        evaluate_acc_breach(StatusCode::NotFound, StatusCode::NotFound, "search_key");
 
     assert_eq!(ok_ok, "BREACH FOUND");
     assert_eq!(ok_notfound, "BREACH FOUND");
@@ -264,31 +246,21 @@ fn test_evaluate_breach_good() {
 #[test]
 #[should_panic]
 fn test_evaluate_breach_panic() {
-    let _badrequest_badrequest = evaluate_acc_breach(
-        StatusCode::BadRequest,
-        StatusCode::BadRequest,
-        "search_key",
-    );
+    let _badrequest_badrequest =
+        evaluate_acc_breach(StatusCode::BadRequest, StatusCode::BadRequest, "search_key");
 }
 
 #[test]
 #[should_panic]
 fn test_evaluate_breach_panic_2() {
-    let _badrequest_notfound = evaluate_acc_breach(
-        StatusCode::BadRequest,
-        StatusCode::NotFound,
-        "search_key",
-    );
+    let _badrequest_notfound =
+        evaluate_acc_breach(StatusCode::BadRequest, StatusCode::NotFound, "search_key");
 }
 
 #[test]
 #[should_panic]
 fn test_evaluate_breach_panic_3() {
-    let _badrequest_ok = evaluate_acc_breach(
-        StatusCode::BadRequest,
-        StatusCode::Ok,
-        "search_key",
-    );
+    let _badrequest_ok = evaluate_acc_breach(StatusCode::BadRequest, StatusCode::Ok, "search_key");
 }
 
 #[test]
@@ -323,10 +295,7 @@ fn test_make_req_and_arg_to_route() {
     );
     assert_eq!(third_path, "https://haveibeenpwned.com/api/v2/breachedaccount/test@example.com?includeUnverified=true&truncateResponse=true");
 
-    assert_eq!(
-        third_path,
-        arg_to_api_route("acc", "test@example.com")
-    );
+    assert_eq!(third_path, arg_to_api_route("acc", "test@example.com"));
     assert_eq!(
         "https://api.pwnedpasswords.com/range/B1B37",
         arg_to_api_route("pass", "qwerty")

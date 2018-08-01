@@ -1,12 +1,16 @@
 #[cfg(test)]
-extern crate assert_cli;
+extern crate assert_cmd;
 extern crate reqwest;
 extern crate rpassword;
 pub mod api;
 
+#[cfg(test)]
+use assert_cmd::prelude::*;
 use reqwest::header::UserAgent;
 use reqwest::StatusCode;
 use std::io::BufRead;
+#[cfg(test)]
+use std::process::Command;
 use std::{env, thread, time};
 
 fn main() {
@@ -62,7 +66,8 @@ fn main() {
         let status_code = pass_stat.status();
         let pass_body = pass_stat.text().unwrap();
         let breach_bool = api::search_in_range(
-            api::split_range(&pass_body.as_bytes().to_vec()), &data_search,
+            api::split_range(&pass_body.as_bytes().to_vec()),
+            &data_search,
         );
 
         if breach_bool {
@@ -74,31 +79,42 @@ fn main() {
 }
 
 #[test]
-fn test_cli_acc() {
-    // Wait, so that test don't get blocked
-    thread::sleep(time::Duration::from_millis(1600));
-
-    assert_cli::Assert::command(&["cargo", "run", "acc", "test@example.com"])
-        .stdout()
-        .contains("BREACH FOUND")
+fn test_cli_acc_breach() {
+    let res = Command::new("cargo")
+        .args(&["run", "acc", "test@example.com"])
         .unwrap();
+
+    assert!(String::from_utf8_lossy(&res.stdout).contains("BREACH FOUND"));
+    assert_eq!(
+        String::from_utf8_lossy(&res.stdout).contains("NO BREACH FOUND"),
+        false
+    );
 }
 
 #[test]
-#[should_panic]
-// Doing the reverse, since I'm unsure how the coloreed module affects this
-fn test_cli_acc_fail() {
-    assert_cli::Assert::command(&["cargo", "run", "acc", "test@example.com"])
-        .stdout()
-        .contains("NO BREACH FOUND")
+fn test_cli_acc_no_breach() {
+    let res = Command::new("cargo")
+        .args(&["run", "acc", "fsrEos7s@wZ3zdGxr.com"])
         .unwrap();
+
+    assert!(String::from_utf8_lossy(&res.stdout).contains("NO BREACH FOUND"));
 }
 
 #[test]
 #[should_panic]
 fn test_cli_arg_fail() {
-    assert_cli::Assert::command(&["cargo", "run", "wrong", "test@example.com"])
-        .stdout()
-        .contains("NO BREACH FOUND")
-        .unwrap();
+    Command::new("cargo")
+        .args(&["run", "wrong", "test@example.com"])
+        .unwrap()
+        .assert()
+        .failure();
+}
+
+#[test]
+fn test_cli_arg_ok() {
+    Command::new("cargo")
+        .args(&["run", "acc", "test@example.com"])
+        .unwrap()
+        .assert()
+        .success();
 }
