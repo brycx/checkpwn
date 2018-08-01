@@ -13,7 +13,7 @@ license = "MIT"
 colored = "1.6"
 sha-1 = "0.7.0"
 hex = "0.3.2"
-reqwest = "0.8.6"
+reqwest = "0.8.7"
 rpassword = "2.0.0"
 
 [dev-dependencies]
