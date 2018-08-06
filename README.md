@@ -1,4 +1,4 @@
-## checkpwn
+## checkpwn ![Build Status](https://travis-ci.org/brycx/checkpwn.svg?branch=master) [![codecov](https://codecov.io/gh/brycx/checkpwn/branch/master/graph/badge.svg)](https://codecov.io/gh/brycx/checkpwn)
 Check [Have I Been Pwned](https://haveibeenpwned.com/) and see if it's time for you to change passwords.
 
 
