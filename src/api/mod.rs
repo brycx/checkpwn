@@ -2,6 +2,7 @@ extern crate colored;
 extern crate hex;
 extern crate reqwest;
 extern crate sha1;
+extern crate percent_encoding;
 
 use self::colored::Colorize;
 use self::sha1::{Digest, Sha1};
@@ -9,6 +10,7 @@ use reqwest::header::UserAgent;
 use reqwest::StatusCode;
 use std::fs::File;
 use std::io::{BufReader, Error};
+use self::percent_encoding::{utf8_percent_encode, DEFAULT_ENCODE_SET};
 
 pub const ACCOUNT: &str = "acc";
 pub const PASSWORD: &str = "pass";
@@ -43,10 +45,14 @@ pub fn arg_to_api_route(arg: &str, input_data: &str) -> String {
     let include_unverified = String::from("includeUnverified=true");
     let truncate_response = String::from("truncateResponse=true");
 
+    // URL encode the input data when it's a user-supplied argument
+    // SHA-1 hashes can safely be passed as-is
+    let url_encoded = utf8_percent_encode(input_data, DEFAULT_ENCODE_SET).to_string();
+
     match arg {
         ACCOUNT => format_req(
             &acc_route,
-            input_data,
+            &url_encoded,
             Some(&include_unverified),
             Some(&truncate_response),
         ),
@@ -57,7 +63,7 @@ pub fn arg_to_api_route(arg: &str, input_data: &str) -> String {
             None,
             None,
         ),
-        "paste" => format_req(&paste_route, input_data, None, None),
+        "paste" => format_req(&paste_route, &url_encoded, None, None),
         _ => panic!("Invalid option {}", arg),
     }
 }
