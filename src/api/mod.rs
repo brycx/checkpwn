@@ -186,7 +186,7 @@ pub fn breach_request(searchterm: &str, option_arg: &str) -> () {
 
 /// Read file into buffer.
 pub fn read_file(path: &str) -> Result<BufReader<File>, Error> {
-    let file_path = File::open(path).unwrap();
+    let file_path = File::open(path).expect("FILE NOT FOUND");
     let file = BufReader::new(file_path);
 
     Ok(file)
