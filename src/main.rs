@@ -47,13 +47,9 @@ fn main() {
             };
 
             api::breach_request(&line, &option_arg);
-            // Only one request every 1500 miliseconds from any given IP
-            thread::sleep(time::Duration::from_millis(1600));
         }
     } else if option_arg == api::ACCOUNT {
         api::breach_request(&data_search, &option_arg);
-        // Only one request every 1500 miliseconds from any given IP
-        thread::sleep(time::Duration::from_millis(1600));
     } else if option_arg == api::PASSWORD {
         let client = reqwest::Client::new();
         let uri_acc = api::arg_to_api_route(&option_arg, &data_search);
@@ -76,6 +72,9 @@ fn main() {
             api::breach_report(StatusCode::NotFound, &data_search, true);
         }
     }
+
+    // Only one request every 1500 miliseconds from any given IP
+    thread::sleep(time::Duration::from_millis(1600));
 }
 
 #[test]
