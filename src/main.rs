@@ -2,6 +2,7 @@
 extern crate assert_cmd;
 extern crate reqwest;
 extern crate rpassword;
+extern crate clear_on_drop;
 pub mod api;
 
 #[cfg(test)]
@@ -12,6 +13,7 @@ use std::io::BufRead;
 #[cfg(test)]
 use std::process::Command;
 use std::{env, thread, time};
+use clear_on_drop::clear::Clear;
 
 fn main() {
     let argvs: Vec<String> = env::args().collect();
@@ -21,7 +23,7 @@ fn main() {
 
     let option_arg = argvs[1].to_lowercase();
 
-    let data_search: String;
+    let mut data_search: String;
 
     match &option_arg as &str {
         api::ACCOUNT => {
@@ -52,7 +54,7 @@ fn main() {
         api::breach_request(&data_search, &option_arg);
     } else if option_arg == api::PASSWORD {
         let client = reqwest::Client::new();
-        let uri_acc = api::arg_to_api_route(&option_arg, &data_search);
+        let mut uri_acc = api::arg_to_api_route(&option_arg, &data_search);
         let mut pass_stat = client
             .get(&uri_acc)
             .header(UserAgent::new("checkpwn - cargo utility tool for hibp"))
@@ -71,7 +73,13 @@ fn main() {
         } else {
             api::breach_report(StatusCode::NotFound, &data_search, true);
         }
+
+        // Zero out uri_acc as this contains a weakly hashed password
+        Clear::clear(&mut uri_acc);
     }
+
+    // Zero out the data_search argument, especially important if this was a password
+    Clear::clear(&mut data_search);
 
     // Only one request every 1500 miliseconds from any given IP
     thread::sleep(time::Duration::from_millis(1600));
