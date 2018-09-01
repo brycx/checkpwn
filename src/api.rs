@@ -89,10 +89,10 @@ pub fn search_in_range(search_space: Vec<String>, search_key: &str) -> bool {
     let mut res = false;
     // Don't include first five chars of own password, as this also
     // is how the HIBP API returns passwords
-    let hashed_key = String::from(&hash_password(search_key)[5..]);
+    let hashed_key = hash_password(search_key);
 
     for item in search_space {
-        if item == hashed_key {
+        if item == hashed_key[5..] {
             res = true;
             break;
         }
