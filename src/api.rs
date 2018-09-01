@@ -20,7 +20,7 @@ static PASS_ROUTE: &str = "https://api.pwnedpasswords.com/range/";
 static PASTE_ROUTE: &str = "https://haveibeenpwned.com/api/v2/pasteaccount/";
 
 /// Format an API request to fit multiple parameters.
-pub fn format_req(api_route: &str, search_term: &str, p3: Option<&str>, p4: Option<&str>) -> String {
+fn format_req(api_route: &str, search_term: &str, p3: Option<&str>, p4: Option<&str>) -> String {
     let mut request = String::new();
     request.push_str(api_route);
     request.push_str(search_term);
@@ -124,7 +124,7 @@ pub fn breach_report(status_code: StatusCode, searchterm: &str, is_password: boo
 }
 
 /// Return a breach report based on two StatusCodes, both need to be false to be a non-breach.
-pub fn evaluate_acc_breach(
+fn evaluate_acc_breach(
     acc_stat: StatusCode,
     paste_stat: StatusCode,
     search_key: &str,
