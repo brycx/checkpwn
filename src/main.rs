@@ -127,6 +127,26 @@ fn test_cli_arg_fail() {
 }
 
 #[test]
+#[should_panic]
+fn test_cli_arg_fail_2() {
+    Command::new("cargo")
+        .args(&["run"])
+        .unwrap()
+        .assert()
+        .failure();
+}
+
+#[test]
+#[should_panic]
+fn test_cli_arg_fail_3() {
+    Command::new("cargo")
+        .args(&["run", "wrong", "test@example.com", "too much"])
+        .unwrap()
+        .assert()
+        .failure();
+}
+
+#[test]
 fn test_cli_arg_ok() {
     Command::new("cargo")
         .args(&["run", "acc", "test@example.com"])
