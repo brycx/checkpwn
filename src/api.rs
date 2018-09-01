@@ -37,6 +37,7 @@ fn format_req(api_route: &str, search_term: &str, p3: Option<&str>, p4: Option<&
 
 /// Take the user-supplied command-line arugments and make a URL for the HIBP API. Also
 /// manages a call to the paste API route, which is done automatically on each "acc" call.
+/// If the `pass` arg has been selected, `input_data` needs to be the hashed password.
 pub fn arg_to_api_route(arg: &str, input_data: &str) -> String {
     // URL encode the input data when it's a user-supplied argument
     // SHA-1 hashes can safely be passed as-is
@@ -52,7 +53,7 @@ pub fn arg_to_api_route(arg: &str, input_data: &str) -> String {
         PASSWORD => format_req(
             PASS_ROUTE,
             // Only send the first 5 chars to the password range API
-            &hash_password(input_data)[..5],
+            &input_data[..5],
             None,
             None,
         ),
@@ -77,10 +78,9 @@ pub fn split_range(response: &[u8]) -> Vec<String> {
     final_vec
 }
 
-/// Find matching key in recevied set of keys.
-pub fn search_in_range(search_space: Vec<String>, search_key: &str) -> bool {
+/// Find matching key in recevied set of keys that has been split with `split_range`.
+pub fn search_in_range(search_space: Vec<String>, hashed_key: &str) -> bool {
     let mut res = false;
-    let hashed_key = hash_password(search_key);
 
     for item in search_space {
         // Don't include first five chars of own password, as this also
@@ -90,11 +90,10 @@ pub fn search_in_range(search_space: Vec<String>, search_key: &str) -> bool {
             break;
         }
     }
-
     res
 }
 
-/// Make a breach report based on StatusCode and print result.
+/// Make a breach report based on StatusCode and print result to temrinal.
 pub fn breach_report(status_code: StatusCode, searchterm: &str, is_password: bool) -> ((), bool) {
     // Do not display password in terminal
     let request_key = if is_password { "********" } else { searchterm };
@@ -141,7 +140,7 @@ fn evaluate_acc_breach(
             panic!(err);
         }
         // Since the account API both takes username and emails and situation where BadRequest
-        // and NotFound arereturned should never occur.
+        // and NotFound are returned should never occur.
         (StatusCode::BadRequest, StatusCode::NotFound) => {
             panic!(err);
         }
@@ -152,7 +151,7 @@ fn evaluate_acc_breach(
     }
 }
 
-/// Make API request for both paste and a command line argument.
+/// HIBP breach request used for `acc` arguments.
 pub fn breach_request(searchterm: &str, option_arg: &str) -> () {
     let uri_acc = arg_to_api_route(option_arg, searchterm);
     let uri_paste = arg_to_api_route("paste", searchterm);
@@ -182,7 +181,7 @@ pub fn read_file(path: &str) -> Result<BufReader<File>, Error> {
 }
 
 /// Return SHA1 digest of string.
-fn hash_password(password: &str) -> String {
+pub fn hash_password(password: &str) -> String {
     let mut sha_digest = Sha1::default();
     sha_digest.input(password.as_bytes());
     // Make uppercase for easier comparison with
@@ -190,10 +189,13 @@ fn hash_password(password: &str) -> String {
     hex::encode(sha_digest.result()).to_uppercase()
 }
 
-// Strip all whitespace and all newlines from a given string
+// Strip all whitespace and all newlines from a given string.
 pub fn strip_white_new(string: &str) -> String {
     string.replace("\n", "").replace(" ", "").replace("\'", "'")
 }
+
+
+
 
 #[test]
 fn test_strip_white_new() {
@@ -293,7 +295,7 @@ fn test_make_req_and_arg_to_route() {
     assert_eq!(third_path, arg_to_api_route("acc", "test@example.com"));
     assert_eq!(
         "https://api.pwnedpasswords.com/range/B1B37",
-        arg_to_api_route("pass", "qwerty")
+        arg_to_api_route("pass", &hash_password("qwerty"))
     );
     assert_eq!(
         "https://haveibeenpwned.com/api/v2/pasteaccount/test@example.com",

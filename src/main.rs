@@ -63,8 +63,11 @@ fn main() {
             api::breach_request(&data_search, &option_arg);
         }
     } else if option_arg == api::PASSWORD {
+
         let client = reqwest::Client::new();
-        let mut uri_acc = api::arg_to_api_route(&option_arg, &data_search);
+
+        let mut hashed_password = api::hash_password(&data_search);
+        let mut uri_acc = api::arg_to_api_route(&option_arg, &hashed_password);
         let mut pass_stat = client
             .get(&uri_acc)
             .header(UserAgent::new("checkpwn - cargo utility tool for hibp"))
@@ -75,7 +78,7 @@ fn main() {
         let pass_body = pass_stat.text().unwrap();
         let breach_bool = api::search_in_range(
             api::split_range(&pass_body.as_bytes().to_vec()),
-            &data_search,
+            &hashed_password,
         );
 
         if breach_bool {
@@ -86,6 +89,7 @@ fn main() {
 
         // Zero out uri_acc as this contains a weakly hashed password
         Clear::clear(&mut uri_acc);
+        Clear::clear(&mut hashed_password);
     }
 
     // Zero out the data_search argument, especially important if this was a password
