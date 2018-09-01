@@ -156,9 +156,7 @@ fn evaluate_acc_breach(
 
 /// Make API request for both paste and a command line argument.
 pub fn breach_request(searchterm: &str, option_arg: &str) -> () {
-    // URI for quering password range, or account, API
     let uri_acc = arg_to_api_route(option_arg, searchterm);
-    // URI for quering paste API
     let uri_paste = arg_to_api_route("paste", searchterm);
 
     let client = reqwest::Client::new();
@@ -167,12 +165,12 @@ pub fn breach_request(searchterm: &str, option_arg: &str) -> () {
         .get(&uri_acc)
         .header(UserAgent::new("checkpwn - cargo utility tool for hibp"))
         .send()
-        .unwrap();
+        .expect("UNABLE TO ESTABLISH ACC CLIENT");
     let paste_stat = client
         .get(&uri_paste)
         .header(UserAgent::new("checkpwn - cargo utility tool for hibp"))
         .send()
-        .unwrap();
+        .expect("UNABLE TO ESTABLISH PASTE CLIENT");
 
     evaluate_acc_breach(acc_stat.status(), paste_stat.status(), searchterm);
 }
