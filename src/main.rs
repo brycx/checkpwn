@@ -15,10 +15,16 @@ use std::process::Command;
 use std::{env, thread, time};
 use clear_on_drop::clear::Clear;
 
+fn usage_panic() {
+    panic!("Usage: checkpwn acc test@example.com");
+}
+
 fn main() {
     let argvs: Vec<String> = env::args().collect();
-    if argvs.len() > 3 || argvs.len() < 2 {
-        panic!("Usage: checkpwn acc test@example.com");
+    if argvs.len() >= 2 {
+        ()
+    } else {
+        usage_panic();
     }
 
     let option_arg = argvs[1].to_lowercase();
@@ -27,31 +33,35 @@ fn main() {
 
     match &option_arg as &str {
         api::ACCOUNT => {
+            if argvs.len() != 3 {usage_panic();}
             data_search = argvs[2].to_owned();
         }
         api::PASSWORD => {
+            if argvs.len() != 2 {usage_panic();}
             data_search = rpassword::prompt_password_stdout("Password: ").unwrap();
         }
         _ => panic!("Usage: checkpwn acc test@example.com"),
     };
 
-    if data_search.to_owned().ends_with(".ls") {
-        let file = api::read_file(&data_search).unwrap();
+    if option_arg == api::ACCOUNT {
+        // Check if user wants to check a local list
+        if data_search.to_owned().ends_with(".ls") {
+            let file = api::read_file(&data_search).unwrap();
 
-        for line_iter in file.lines() {
-            let line = api::strip_white_new(&line_iter.unwrap());
+            for line_iter in file.lines() {
+                let line = api::strip_white_new(&line_iter.unwrap());
 
-            match line.as_str() {
-                "\n" => continue,
-                "\t" => continue,
-                "" => continue,
-                _ => (),
-            };
-
-            api::breach_request(&line, &option_arg);
+                match line.as_str() {
+                    "\n" => continue,
+                    "\t" => continue,
+                    "" => continue,
+                    _ => (),
+                };
+                api::breach_request(&line, &option_arg);
+            }
+        } else {
+            api::breach_request(&data_search, &option_arg);
         }
-    } else if option_arg == api::ACCOUNT {
-        api::breach_request(&data_search, &option_arg);
     } else if option_arg == api::PASSWORD {
         let client = reqwest::Client::new();
         let mut uri_acc = api::arg_to_api_route(&option_arg, &data_search);
