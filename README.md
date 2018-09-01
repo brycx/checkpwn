@@ -25,6 +25,8 @@ checkpwn acc daily_breach_check.ls
 
 _NOTE: List files must have the .ls file extension._
 
+When checking accounts like this they will be run against both the HIBP "paste" and "account" database.
+
 #### Check a password
 ```
 checkpwn pass
