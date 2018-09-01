@@ -21,8 +21,7 @@ static PASTE_ROUTE: &str = "https://haveibeenpwned.com/api/v2/pasteaccount/";
 
 /// Format an API request to fit multiple parameters.
 fn format_req(api_route: &str, search_term: &str, p3: Option<&str>, p4: Option<&str>) -> String {
-    let mut request = String::new();
-    request.push_str(api_route);
+    let mut request = String::from(api_route);
     request.push_str(search_term);
 
     if let Some(ref path3) = p3 {
