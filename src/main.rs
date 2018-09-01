@@ -85,7 +85,7 @@ fn main() {
             api::breach_report(StatusCode::NotFound, &data_search, true);
         }
 
-        // Zero out uri_acc as this contains a weakly hashed password
+        // Zero out as this contains a weakly hashed password
         Clear::clear(&mut uri_acc);
         Clear::clear(&mut hashed_password);
     }
