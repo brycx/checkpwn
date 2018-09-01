@@ -74,10 +74,7 @@ fn main() {
             .expect("FAILED TO SEND PASS CLIENT REQUEST");
 
         let pass_body: String = pass_stat.text().expect("COULD NOT GET PASS RESPONSE BODY");
-        let breach_bool = api::search_in_range(
-            api::split_range(pass_body),
-            &hashed_password,
-        );
+        let breach_bool = api::search_in_range(api::split_range(pass_body), &hashed_password);
 
         if breach_bool {
             api::breach_report(pass_stat.status(), &data_search, true);

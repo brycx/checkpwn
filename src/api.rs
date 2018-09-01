@@ -69,7 +69,9 @@ pub fn split_range(range_string: String) -> Vec<String> {
     let mut range_vector: Vec<String> = vec![];
     // Each string truncated to only be the hash, no whitespaces
     // All hashes here have a length of 35, so the useless gets dropped
-    range_string.lines().for_each(|line| range_vector.push(String::from(&line[..35])));
+    range_string
+        .lines()
+        .for_each(|line| range_vector.push(String::from(&line[..35])));
 
     range_vector
 }
@@ -360,4 +362,48 @@ fn test_split_in_range() {
     let excp_vec: Vec<_> = expected.lines().collect();
 
     assert_eq!(split_range(response), excp_vec);
+}
+
+#[test]
+fn test_search_succes_and_failure() {
+    // https://api.pwnedpasswords.com/range/B1B37
+
+    let contains_pass = String::from(
+        "73678F196DE938F721CD408ED190330F5DB:3
+7377BA15B8D5E12FCCBA32B074D45503D67:2
+7387376AFD1B3DAB553D439C8A7D7CDDED1:2
+73A05C0ED0176787A4F1574FF0075F7521E:3752262
+748186F058DA83745B80E70B66D36B216A4:4
+75FEC591927A596B6114ED5DAC4E4C22E04:10
+76004E5282C5384DE32AFC2148BAD032450:2
+769A96DED7A904FBE8F130508B2BFDDAEB1:3
+76B8A2A14A15A8C22A49EC451DE9778581A:2
+76C507D6248060841D4B4A4D444947E28A8:11
+782C978C9120CF75BE0D93BE1330C2705E5:2
+783F271CECC5F9BBC1E56B0585568C80248:5
+7855E6B64AF9544B2B915CB09ADF44B507E:1",
+    );
+
+    let no_pass = String::from(
+        "7EC6529B5FFD62972B78F961DA68CCC1B0E:1
+7ECD0E2C0152DB98585B54B0161E05D5823:2
+7ED83795FEA81B716B31648AE233AB392B6:1
+7F14F4258243863575CBF33215358357C61:4
+7FF32ECF384A7DBD7F1325F2AA9421747D8:6
+7FFDB37B4ACDBAD365DE51962CAFFEE7412:1
+801EEE3EB6CE29DB12AB39D4E4C1E579372:3
+80BADE9877A506510B46A393706CE0E554F:9
+818D08C77BAAD2270478CE11D97F2E64CEA:1",
+    );
+
+    let hashed_password = hash_password("qwerty");
+
+    assert_eq!(
+        search_in_range(split_range(contains_pass), &hashed_password),
+        true
+    );
+    assert_eq!(
+        search_in_range(split_range(no_pass), &hashed_password),
+        false
+    );
 }
