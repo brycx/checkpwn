@@ -94,6 +94,7 @@ pub fn search_in_range(search_space: Vec<String>, search_key: &str) -> bool {
     for item in search_space {
         if item == hashed_key {
             res = true;
+            break;
         }
     }
 
