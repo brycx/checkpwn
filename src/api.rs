@@ -16,22 +16,19 @@ pub const ACCOUNT: &str = "acc";
 pub const PASSWORD: &str = "pass";
 
 /// Format an API request to fit multiple parameters.
-pub fn format_req(p1: &str, p2: &str, p3: Option<&str>, p4: Option<&str>) -> String {
+pub fn format_req(api_route: &str, search_term: &str, p3: Option<&str>, p4: Option<&str>) -> String {
     let mut request = String::new();
-    request.push_str(p1);
-    request.push_str(p2);
+    request.push_str(api_route);
+    request.push_str(search_term);
 
-    // Start URL query
     if let Some(ref path3) = p3 {
         request.push_str("?");
         request.push_str(path3)
     };
-    // Multiple URL queries
     if let Some(ref path4) = p4 {
         request.push_str("&");
         request.push_str(path4)
     };
-
     request
 }
 
@@ -42,9 +39,6 @@ pub fn arg_to_api_route(arg: &str, input_data: &str) -> String {
     let password_route = String::from("https://api.pwnedpasswords.com/range/");
     let paste_route = String::from("https://haveibeenpwned.com/api/v2/pasteaccount/");
 
-    let include_unverified = String::from("includeUnverified=true");
-    let truncate_response = String::from("truncateResponse=true");
-
     // URL encode the input data when it's a user-supplied argument
     // SHA-1 hashes can safely be passed as-is
     let url_encoded = utf8_percent_encode(input_data, DEFAULT_ENCODE_SET).to_string();
@@ -53,8 +47,8 @@ pub fn arg_to_api_route(arg: &str, input_data: &str) -> String {
         ACCOUNT => format_req(
             &acc_route,
             &url_encoded,
-            Some(&include_unverified),
-            Some(&truncate_response),
+            Some("includeUnverified=true"),
+            Some("truncateResponse=true"),
         ),
         PASSWORD => format_req(
             &password_route,
