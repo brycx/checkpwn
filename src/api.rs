@@ -163,12 +163,12 @@ pub fn breach_request(searchterm: &str, option_arg: &str) -> () {
         .get(&uri_acc)
         .header(UserAgent::new("checkpwn - cargo utility tool for hibp"))
         .send()
-        .expect("UNABLE TO ESTABLISH ACC CLIENT");
+        .expect("FAILED TO SEND ACC CLIENT REQUEST");
     let paste_stat = client
         .get(&uri_paste)
         .header(UserAgent::new("checkpwn - cargo utility tool for hibp"))
         .send()
-        .expect("UNABLE TO ESTABLISH PASTE CLIENT");
+        .expect("FAILED TO SEND PASTE CLIENT REQUEST");
 
     evaluate_acc_breach(acc_stat.status(), paste_stat.status(), searchterm);
 }

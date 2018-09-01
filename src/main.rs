@@ -69,7 +69,7 @@ fn main() {
             .get(&uri_acc)
             .header(UserAgent::new("checkpwn - cargo utility tool for hibp"))
             .send()
-            .unwrap();
+            .expect("FAILED TO SEND PASS CLIENT REQUEST");
 
         let status_code = pass_stat.status();
         let pass_body = pass_stat.text().unwrap();
