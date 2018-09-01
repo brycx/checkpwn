@@ -328,6 +328,12 @@ fn test_invalid_argument() {
     arg_to_api_route(&option_arg, &data_search);
 }
 
+#[should_panic]
+#[test]
+fn test_breach_invalid_status() {
+    breach_report(StatusCode::Forbidden, "saome", true);
+}
+
 #[test]
 fn test_split_in_range() {
     // From https://api.pwnedpasswords.com/range/21BD1
