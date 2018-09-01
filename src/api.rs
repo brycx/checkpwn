@@ -15,6 +15,10 @@ use std::io::{BufReader, Error};
 pub const ACCOUNT: &str = "acc";
 pub const PASSWORD: &str = "pass";
 
+static ACC_ROUTE: &str = "https://haveibeenpwned.com/api/v2/breachedaccount/";
+static PASS_ROUTE: &str = "https://api.pwnedpasswords.com/range/";
+static PASTE_ROUTE: &str = "https://haveibeenpwned.com/api/v2/pasteaccount/";
+
 /// Format an API request to fit multiple parameters.
 pub fn format_req(api_route: &str, search_term: &str, p3: Option<&str>, p4: Option<&str>) -> String {
     let mut request = String::new();
@@ -35,29 +39,25 @@ pub fn format_req(api_route: &str, search_term: &str, p3: Option<&str>, p4: Opti
 /// Take the user-supplied command-line arugments and make a URL for the HIBP API. Also
 /// manages a call to the paste API route, which is done automatically on each "acc" call.
 pub fn arg_to_api_route(arg: &str, input_data: &str) -> String {
-    let acc_route = String::from("https://haveibeenpwned.com/api/v2/breachedaccount/");
-    let password_route = String::from("https://api.pwnedpasswords.com/range/");
-    let paste_route = String::from("https://haveibeenpwned.com/api/v2/pasteaccount/");
-
     // URL encode the input data when it's a user-supplied argument
     // SHA-1 hashes can safely be passed as-is
     let url_encoded = utf8_percent_encode(input_data, DEFAULT_ENCODE_SET).to_string();
 
     match arg {
         ACCOUNT => format_req(
-            &acc_route,
+            ACC_ROUTE,
             &url_encoded,
             Some("includeUnverified=true"),
             Some("truncateResponse=true"),
         ),
         PASSWORD => format_req(
-            &password_route,
+            PASS_ROUTE,
             // Only send the first 5 chars to the password range API
             &hash_password(input_data)[..5],
             None,
             None,
         ),
-        "paste" => format_req(&paste_route, &url_encoded, None, None),
+        "paste" => format_req(PASTE_ROUTE, &url_encoded, None, None),
         _ => panic!("Invalid option {}", arg),
     }
 }
