@@ -35,9 +35,8 @@ fn format_req(api_route: &str, search_term: &str, p3: Option<&str>, p4: Option<&
     request
 }
 
-/// Take the user-supplied command-line arugments and make a URL for the HIBP API. Also
-/// manages a call to the paste API route, which is done automatically on each "acc" call.
-/// If the `pass` arg has been selected, `input_data` needs to be the hashed password.
+/// Take the user-supplied command-line arugments and make a URL for the HIBP API.
+/// If the `pass` argument has been selected, `input_data` needs to be the hashed password.
 pub fn arg_to_api_route(arg: &str, input_data: &str) -> String {
     // URL encode the input data when it's a user-supplied argument
     // SHA-1 hashes can safely be passed as-is
@@ -65,17 +64,13 @@ pub fn arg_to_api_route(arg: &str, input_data: &str) -> String {
 /// Take a response from quering password range API and split it into vector of strings.
 pub fn split_range(response: &[u8]) -> Vec<String> {
     let range_string = String::from_utf8_lossy(response);
-
     // Split up range_string into vector of strings for each newline
-    let range_vector: Vec<_> = range_string.lines().collect();
-    let mut final_vec: Vec<_> = vec![];
-
+    let mut range_vector: Vec<String> = vec![];
     // Each string truncated to only be the hash, no whitespaces
     // All hashes here have a length of 35, so the useless gets dropped
-    for index in range_vector {
-        final_vec.push(String::from(&index[..35]));
-    }
-    final_vec
+    range_string.lines().for_each(|line| range_vector.push(String::from(&line[..35])));
+
+    range_vector
 }
 
 /// Find matching key in recevied set of keys that has been split with `split_range`.
