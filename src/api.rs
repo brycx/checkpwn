@@ -194,9 +194,6 @@ pub fn strip_white_new(string: &str) -> String {
     string.replace("\n", "").replace(" ", "").replace("\'", "'")
 }
 
-
-
-
 #[test]
 fn test_strip_white_new() {
     let string_1 = String::from("fkljjsdjlksfdklj dfiwj wefwefwfe");

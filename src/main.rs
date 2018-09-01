@@ -1,19 +1,19 @@
 #[cfg(test)]
 extern crate assert_cmd;
+extern crate clear_on_drop;
 extern crate reqwest;
 extern crate rpassword;
-extern crate clear_on_drop;
 pub mod api;
 
 #[cfg(test)]
 use assert_cmd::prelude::*;
+use clear_on_drop::clear::Clear;
 use reqwest::header::UserAgent;
 use reqwest::StatusCode;
 use std::io::BufRead;
 #[cfg(test)]
 use std::process::Command;
 use std::{env, thread, time};
-use clear_on_drop::clear::Clear;
 
 fn usage_panic() {
     panic!("Usage: checkpwn acc test@example.com");
@@ -33,11 +33,15 @@ fn main() {
 
     match &option_arg as &str {
         api::ACCOUNT => {
-            if argvs.len() != 3 {usage_panic();}
+            if argvs.len() != 3 {
+                usage_panic();
+            }
             data_search = argvs[2].to_owned();
         }
         api::PASSWORD => {
-            if argvs.len() != 2 {usage_panic();}
+            if argvs.len() != 2 {
+                usage_panic();
+            }
             data_search = rpassword::prompt_password_stdout("Password: ").unwrap();
         }
         _ => panic!("Usage: checkpwn acc test@example.com"),
@@ -63,7 +67,6 @@ fn main() {
             api::breach_request(&data_search, &option_arg);
         }
     } else if option_arg == api::PASSWORD {
-
         let client = reqwest::Client::new();
 
         let mut hashed_password = api::hash_password(&data_search);
