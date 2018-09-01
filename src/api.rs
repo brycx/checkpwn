@@ -128,6 +128,8 @@ fn evaluate_acc_breach(
         (StatusCode::NotFound, StatusCode::NotFound) => {
             breach_report(StatusCode::NotFound, &search_key, false)
         }
+        // BadRequest allowed here because the account API lets you search for usernames
+        // and the paste API will reutrn BadRequest on those
         (StatusCode::NotFound, StatusCode::BadRequest) => {
             breach_report(StatusCode::NotFound, &search_key, false)
         }
