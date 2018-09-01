@@ -150,18 +150,15 @@ fn evaluate_acc_breach(
 
 /// HIBP breach request used for `acc` arguments.
 pub fn breach_request(searchterm: &str, option_arg: &str) -> () {
-    let uri_acc = arg_to_api_route(option_arg, searchterm);
-    let uri_paste = arg_to_api_route("paste", searchterm);
-
     let client = reqwest::Client::new();
 
     let acc_stat = client
-        .get(&uri_acc)
+        .get(&arg_to_api_route(option_arg, searchterm))
         .header(UserAgent::new("checkpwn - cargo utility tool for hibp"))
         .send()
         .expect("FAILED TO SEND ACC CLIENT REQUEST");
     let paste_stat = client
-        .get(&uri_paste)
+        .get(&arg_to_api_route("paste", searchterm))
         .header(UserAgent::new("checkpwn - cargo utility tool for hibp"))
         .send()
         .expect("FAILED TO SEND PASTE CLIENT REQUEST");
