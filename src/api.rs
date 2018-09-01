@@ -64,8 +64,7 @@ pub fn arg_to_api_route(arg: &str, input_data: &str) -> String {
 }
 
 /// Take a response from quering password range API and split it into vector of strings.
-pub fn split_range(response: &[u8]) -> Vec<String> {
-    let range_string = String::from_utf8_lossy(response);
+pub fn split_range(range_string: String) -> Vec<String> {
     // Split up range_string into vector of strings for each newline
     let mut range_vector: Vec<String> = vec![];
     // Each string truncated to only be the hash, no whitespaces
@@ -360,5 +359,5 @@ fn test_split_in_range() {
 
     let excp_vec: Vec<_> = expected.lines().collect();
 
-    assert_eq!(split_range(response.as_bytes()), excp_vec);
+    assert_eq!(split_range(response), excp_vec);
 }

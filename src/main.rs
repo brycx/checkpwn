@@ -73,15 +73,14 @@ fn main() {
             .send()
             .expect("FAILED TO SEND PASS CLIENT REQUEST");
 
-        let status_code = pass_stat.status();
-        let pass_body = pass_stat.text().unwrap();
+        let pass_body: String = pass_stat.text().expect("COULD NOT GET PASS RESPONSE BODY");
         let breach_bool = api::search_in_range(
-            api::split_range(&pass_body.as_bytes().to_vec()),
+            api::split_range(pass_body),
             &hashed_password,
         );
 
         if breach_bool {
-            api::breach_report(status_code, &data_search, true);
+            api::breach_report(pass_stat.status(), &data_search, true);
         } else {
             api::breach_report(StatusCode::NotFound, &data_search, true);
         }
