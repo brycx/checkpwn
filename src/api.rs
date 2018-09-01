@@ -14,6 +14,8 @@ use std::io::{BufReader, Error};
 
 pub const ACCOUNT: &str = "acc";
 pub const PASSWORD: &str = "pass";
+pub const USER_AGENT: &str = "checkpwn - cargo utility tool for hibp";
+pub const USAGE_INFO: &str = "Usage: checkpwn acc test@example.com";
 
 static ACC_ROUTE: &str = "https://haveibeenpwned.com/api/v2/breachedaccount/";
 static PASS_ROUTE: &str = "https://api.pwnedpasswords.com/range/";
@@ -154,12 +156,12 @@ pub fn breach_request(searchterm: &str, option_arg: &str) -> () {
 
     let acc_stat = client
         .get(&arg_to_api_route(option_arg, searchterm))
-        .header(UserAgent::new("checkpwn - cargo utility tool for hibp"))
+        .header(UserAgent::new(USER_AGENT))
         .send()
         .expect("FAILED TO SEND ACC CLIENT REQUEST");
     let paste_stat = client
         .get(&arg_to_api_route("paste", searchterm))
-        .header(UserAgent::new("checkpwn - cargo utility tool for hibp"))
+        .header(UserAgent::new(USER_AGENT))
         .send()
         .expect("FAILED TO SEND PASTE CLIENT REQUEST");
 
@@ -183,7 +185,7 @@ pub fn hash_password(password: &str) -> String {
     hex::encode(sha_digest.result()).to_uppercase()
 }
 
-// Strip all whitespace and all newlines from a given string.
+/// Strip all whitespace and all newlines from a given string.
 pub fn strip_white_new(string: &str) -> String {
     string.replace("\n", "").replace(" ", "").replace("\'", "'")
 }

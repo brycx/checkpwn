@@ -15,16 +15,12 @@ use std::io::BufRead;
 use std::process::Command;
 use std::{env, thread, time};
 
-fn usage_panic() {
-    panic!("Usage: checkpwn acc test@example.com");
-}
-
 fn main() {
     let argvs: Vec<String> = env::args().collect();
     if argvs.len() >= 2 {
         ()
     } else {
-        usage_panic();
+        panic!(api::USAGE_INFO);
     }
 
     let option_arg = argvs[1].to_lowercase();
@@ -34,17 +30,17 @@ fn main() {
     match &option_arg as &str {
         api::ACCOUNT => {
             if argvs.len() != 3 {
-                usage_panic();
+                panic!(api::USAGE_INFO);
             }
             data_search = argvs[2].to_owned();
         }
         api::PASSWORD => {
             if argvs.len() != 2 {
-                usage_panic();
+                panic!(api::USAGE_INFO);
             }
             data_search = rpassword::prompt_password_stdout("Password: ").unwrap();
         }
-        _ => panic!("Usage: checkpwn acc test@example.com"),
+        _ => panic!(api::USAGE_INFO),
     };
 
     if option_arg == api::ACCOUNT {
@@ -73,7 +69,7 @@ fn main() {
         let mut uri_acc = api::arg_to_api_route(&option_arg, &hashed_password);
         let mut pass_stat = client
             .get(&uri_acc)
-            .header(UserAgent::new("checkpwn - cargo utility tool for hibp"))
+            .header(UserAgent::new(api::USER_AGENT))
             .send()
             .expect("FAILED TO SEND PASS CLIENT REQUEST");
 
