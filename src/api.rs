@@ -95,9 +95,7 @@ pub fn search_in_range(search_space: Vec<String>, search_key: &str) -> bool {
 }
 
 /// Make a breach report based on StatusCode and print result.
-pub fn breach_report(status_code: StatusCode, searchterm: &str, is_password: bool) -> ((), String) {
-    let breach_found = String::from("BREACH FOUND");
-    let breach_not_found = String::from("NO BREACH FOUND");
+pub fn breach_report(status_code: StatusCode, searchterm: &str, is_password: bool) -> ((), bool) {
     // Do not display password in terminal
     let request_key = if is_password { "********" } else { searchterm };
 
@@ -108,7 +106,7 @@ pub fn breach_report(status_code: StatusCode, searchterm: &str, is_password: boo
                 request_key.cyan(),
                 "NO BREACH FOUND".green()
             ),
-            breach_not_found,
+            false,
         ),
         StatusCode::Ok => (
             println!(
@@ -116,7 +114,7 @@ pub fn breach_report(status_code: StatusCode, searchterm: &str, is_password: boo
                 request_key.cyan(),
                 "BREACH FOUND".red()
             ),
-            breach_found,
+            true,
         ),
         _ => panic!("Unrecognized StatusCode detected"),
     }
@@ -127,7 +125,7 @@ fn evaluate_acc_breach(
     acc_stat: StatusCode,
     paste_stat: StatusCode,
     search_key: &str,
-) -> ((), String) {
+) -> ((), bool) {
     let err = "HIBP returned Bad Request on account: ".to_string()
         + search_key
         + " - Make sure it is a valid account.";
@@ -232,12 +230,12 @@ fn test_evaluate_breach_good() {
     let (_, notfound_notfound) =
         evaluate_acc_breach(StatusCode::NotFound, StatusCode::NotFound, "search_key");
 
-    assert_eq!(ok_ok, "BREACH FOUND");
-    assert_eq!(ok_notfound, "BREACH FOUND");
-    assert_eq!(notfound_ok, "BREACH FOUND");
-    assert_eq!(ok_badrequest, "BREACH FOUND");
-    assert_eq!(notfound_badrequest, "NO BREACH FOUND");
-    assert_eq!(notfound_notfound, "NO BREACH FOUND");
+    assert_eq!(ok_ok, true);
+    assert_eq!(ok_notfound, true);
+    assert_eq!(notfound_ok, true);
+    assert_eq!(ok_badrequest, true);
+    assert_eq!(notfound_badrequest, false);
+    assert_eq!(notfound_notfound, false);
 }
 
 #[test]
