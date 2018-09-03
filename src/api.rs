@@ -15,7 +15,6 @@ use std::io::{BufReader, Error};
 pub const ACCOUNT: &str = "acc";
 pub const PASSWORD: &str = "pass";
 pub const USER_AGENT: &str = "checkpwn - cargo utility tool for hibp";
-pub const USAGE_INFO: &str = "Usage: checkpwn acc test@example.com";
 
 static ACC_ROUTE: &str = "https://haveibeenpwned.com/api/v2/breachedaccount/";
 static PASS_ROUTE: &str = "https://api.pwnedpasswords.com/range/";
@@ -64,7 +63,7 @@ pub fn arg_to_api_route(arg: &str, input_data: &str) -> String {
 }
 
 /// Take a response from quering password range API and split it into vector of strings.
-pub fn split_range(range_string: String) -> Vec<String> {
+pub fn split_range(range_string: &str) -> Vec<String> {
     // Split up range_string into vector of strings for each newline
     let mut range_vector: Vec<String> = vec![];
     // Each string truncated to only be the hash, no whitespaces
@@ -361,7 +360,7 @@ fn test_split_in_range() {
 
     let excp_vec: Vec<_> = expected.lines().collect();
 
-    assert_eq!(split_range(response), excp_vec);
+    assert_eq!(split_range(&response), excp_vec);
 }
 
 #[test]
@@ -399,11 +398,11 @@ fn test_search_succes_and_failure() {
     let hashed_password = hash_password("qwerty");
 
     assert_eq!(
-        search_in_range(split_range(contains_pass), &hashed_password),
+        search_in_range(split_range(&contains_pass), &hashed_password),
         true
     );
     assert_eq!(
-        search_in_range(split_range(no_pass), &hashed_password),
+        search_in_range(split_range(&no_pass), &hashed_password),
         false
     );
 }
