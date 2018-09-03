@@ -4,6 +4,7 @@ extern crate clear_on_drop;
 extern crate reqwest;
 extern crate rpassword;
 pub mod api;
+pub mod errors;
 
 #[cfg(test)]
 use assert_cmd::prelude::*;
@@ -20,7 +21,7 @@ fn main() {
     if argvs.len() >= 2 {
         ()
     } else {
-        panic!(api::USAGE_INFO);
+        panic!(errors::USAGE_ERROR);
     }
 
     let option_arg = argvs[1].to_lowercase();
@@ -30,17 +31,17 @@ fn main() {
     match &option_arg as &str {
         api::ACCOUNT => {
             if argvs.len() != 3 {
-                panic!(api::USAGE_INFO);
+                panic!(errors::USAGE_ERROR);
             }
             data_search = argvs[2].to_owned();
         }
         api::PASSWORD => {
             if argvs.len() != 2 {
-                panic!(api::USAGE_INFO);
+                panic!(errors::USAGE_ERROR);
             }
             data_search = rpassword::prompt_password_stdout("Password: ").unwrap();
         }
-        _ => panic!(api::USAGE_INFO),
+        _ => panic!(errors::USAGE_ERROR),
     };
 
     if option_arg == api::ACCOUNT {
@@ -74,7 +75,7 @@ fn main() {
             .expect("FAILED TO SEND PASS CLIENT REQUEST");
 
         let pass_body: String = pass_stat.text().expect("COULD NOT GET PASS RESPONSE BODY");
-        let breach_bool = api::search_in_range(api::split_range(pass_body), &hashed_password);
+        let breach_bool = api::search_in_range(api::split_range(&pass_body), &hashed_password);
 
         if breach_bool {
             api::breach_report(pass_stat.status(), &data_search, true);
