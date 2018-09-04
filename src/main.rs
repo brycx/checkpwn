@@ -52,7 +52,6 @@ fn acc_check(data_search: &str) {
                 continue;
             }
             api::acc_breach_request(&line);
-
             // Only one request every 1500 miliseconds from any given IP
             thread::sleep(time::Duration::from_millis(1600));
         }
@@ -61,10 +60,10 @@ fn acc_check(data_search: &str) {
     }
 }
 
-fn pass_check(data_search: &str) {
+fn pass_check(data_search: &api::PassArg) {
     let client = reqwest::Client::new();
 
-    let mut hashed_password = api::hash_password(data_search);
+    let mut hashed_password = api::hash_password(&data_search.password);
     let mut uri_acc = api::arg_to_api_route(&api::CheckableChoices::PASS, &hashed_password);
     set_checkpwn_panic!(api::errors::NETWORK_ERROR);
     let mut pass_stat = client
@@ -78,9 +77,9 @@ fn pass_check(data_search: &str) {
     let breach_bool = api::search_in_range(api::split_range(&pass_body), &hashed_password);
 
     if breach_bool {
-        api::breach_report(pass_stat.status(), data_search, true);
+        api::breach_report(pass_stat.status(), &hashed_password, true);
     } else {
-        api::breach_report(StatusCode::NotFound, data_search, true);
+        api::breach_report(StatusCode::NotFound, &hashed_password, true);
     }
 
     // Zero out as this contains a weakly hashed password
@@ -95,25 +94,22 @@ fn main() {
 
     let mut argvs: Vec<String> = env::args().collect();
     let option_arg = argvs[1].to_lowercase();
-    let mut data_search = String::from("");
 
     match &option_arg as &str {
         "acc" => {
             assert!(argvs.len() == 3);
-            let data_search = argvs[2].to_owned();
-            acc_check(&data_search);
+            acc_check(&argvs[2]);
         }
         "pass" => {
             assert!(argvs.len() == 2);
             set_checkpwn_panic!(api::errors::PASSWORD_ERROR);
-            let data_search = rpassword::prompt_password_stdout("Password: ").unwrap();
-            pass_check(&data_search);
+            let password = api::PassArg {
+                password: rpassword::prompt_password_stdout("Password: ").unwrap(),
+            };
+            pass_check(&password);
         }
         _ => panic!(),
     };
-
-    // Zero out the data_search argument, especially important if this was a password
-    Clear::clear(&mut data_search);
     // Zero out the collected arguments, in case the user accidentally inputs the password as
     // runtime argument
     for argument in &mut argvs.iter_mut() {

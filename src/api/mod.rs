@@ -20,6 +20,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+extern crate clear_on_drop;
 extern crate colored;
 extern crate hex;
 extern crate percent_encoding;
@@ -31,6 +32,7 @@ pub mod errors;
 use self::colored::Colorize;
 use self::percent_encoding::{utf8_percent_encode, DEFAULT_ENCODE_SET};
 use self::sha1::{Digest, Sha1};
+use clear_on_drop::clear::Clear;
 use reqwest::header::UserAgent;
 use reqwest::StatusCode;
 
@@ -53,6 +55,16 @@ impl CheckableChoices {
             CheckableChoices::PASS => "https://api.pwnedpasswords.com/range/",
             CheckableChoices::PASTE => "https://haveibeenpwned.com/api/v2/pasteaccount/",
         }
+    }
+}
+
+pub struct PassArg {
+    pub password: String,
+}
+
+impl Drop for PassArg {
+    fn drop(&mut self) {
+        Clear::clear(&mut self.password)
     }
 }
 
