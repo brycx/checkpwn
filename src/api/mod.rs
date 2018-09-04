@@ -181,13 +181,13 @@ fn evaluate_acc_breach(
 }
 
 /// HIBP breach request used for `acc` arguments.
-pub fn breach_request(searchterm: &str, option_arg: &str) -> () {
+pub fn acc_breach_request(searchterm: &str) -> () {
     let client = reqwest::Client::new();
 
     set_checkpwn_panic!(errors::NETWORK_ERROR);
 
     let acc_stat = client
-        .get(&arg_to_api_route(option_arg, searchterm))
+        .get(&arg_to_api_route("acc", searchterm))
         .header(UserAgent::new(USER_AGENT))
         .send()
         .unwrap();

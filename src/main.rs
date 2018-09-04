@@ -55,13 +55,13 @@ fn acc_check(data_search: &str) {
                 "" => continue,
                 _ => (),
             };
-            api::breach_request(&line, "acc");
+            api::acc_breach_request(&line);
 
             // Only one request every 1500 miliseconds from any given IP
             thread::sleep(time::Duration::from_millis(1600));
         }
     } else {
-        api::breach_request(data_search, "acc");
+        api::acc_breach_request(data_search);
     }
 }
 
