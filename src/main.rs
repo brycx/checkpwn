@@ -91,11 +91,11 @@ fn main() {
     // Set custom usage panic message
     set_checkpwn_panic!(api::errors::USAGE_ERROR);
     assert!(env::args().len() >= 2);
+    assert!(env::args().len() < 4);
 
     let mut argvs: Vec<String> = env::args().collect();
-    let option_arg = argvs[1].to_lowercase();
 
-    match &option_arg as &str {
+    match argvs[1].to_lowercase().as_str() {
         "acc" => {
             assert!(argvs.len() == 3);
             acc_check(&argvs[2]);
