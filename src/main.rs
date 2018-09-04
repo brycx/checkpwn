@@ -34,7 +34,7 @@ use clear_on_drop::clear::Clear;
 use reqwest::header::UserAgent;
 use reqwest::StatusCode;
 use std::io::BufRead;
-use std::panic::{self, PanicInfo};
+use std::panic;
 #[cfg(test)]
 use std::process::Command;
 use std::{env, thread, time};
@@ -42,7 +42,7 @@ use std::{env, thread, time};
 fn main() {
     let argvs: Vec<String> = env::args().collect();
     // Set custom usage panic message
-    setup_checkpwn_panic!(api::errors::USAGE_ERROR);
+    set_checkpwn_panic!(api::errors::USAGE_ERROR);
 
     if argvs.len() >= 2 {
         ()
@@ -65,7 +65,7 @@ fn main() {
             if argvs.len() != 2 {
                 panic!();
             }
-            api::errors::panic_set_reset_hook(api::errors::PASSWORD_ERROR);
+            set_checkpwn_panic!(api::errors::PASSWORD_ERROR);
             data_search = rpassword::prompt_password_stdout("Password: ").unwrap();
         }
         _ => panic!(),
@@ -74,11 +74,11 @@ fn main() {
     if option_arg == api::ACCOUNT {
         // Check if user wants to check a local list
         if data_search.ends_with(".ls") {
-            api::errors::panic_set_reset_hook(api::errors::BUFREADER_ERROR);
+            set_checkpwn_panic!(api::errors::BUFREADER_ERROR);
             let file = api::read_file(&data_search).unwrap();
 
             for line_iter in file.lines() {
-                api::errors::panic_set_reset_hook(api::errors::READLINE_ERROR);
+                set_checkpwn_panic!(api::errors::READLINE_ERROR);
                 let line = api::strip_white_new(&line_iter.unwrap());
 
                 match line.as_str() {
@@ -100,14 +100,14 @@ fn main() {
 
         let mut hashed_password = api::hash_password(&data_search);
         let mut uri_acc = api::arg_to_api_route(&option_arg, &hashed_password);
-        api::errors::panic_set_reset_hook(api::errors::NETWORK_ERROR);
+        set_checkpwn_panic!(api::errors::NETWORK_ERROR);
         let mut pass_stat = client
             .get(&uri_acc)
             .header(UserAgent::new(api::USER_AGENT))
             .send()
             .unwrap();
 
-        api::errors::panic_set_reset_hook(api::errors::DECODING_ERROR);
+        set_checkpwn_panic!(api::errors::DECODING_ERROR);
         let pass_body: String = pass_stat.text().unwrap();
         let breach_bool = api::search_in_range(api::split_range(&pass_body), &hashed_password);
 

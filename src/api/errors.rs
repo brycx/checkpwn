@@ -20,8 +20,6 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-use std::panic::{self, PanicInfo};
-
 /// All the different errors for checkpwn;
 /// Errors that are meant to be internal or or unreachable print this.
 pub const USAGE_ERROR: &str = "Usage: checkpwn (acc/pass) (username/email/account_list.ls)";
@@ -35,20 +33,14 @@ pub const BAD_RESPONSE_ERROR: &str = "Recevied a bad response from HIBP - make s
 pub const BUFREADER_ERROR: &str = "Failed to read file in to BufReader";
 pub const READLINE_ERROR: &str = "Failed to read line from file";
 
-
-macro_rules! setup_checkpwn_panic {
+/// Set panic hook, to have .unwrap(), etc, return the custom panic message.
+macro_rules! set_checkpwn_panic {
     ($x:expr) => {
-        panic::set_hook(Box::new(move |_info: &PanicInfo| {
+        // Set new hook with custom message
+        panic::set_hook(Box::new(|_| {
             println!("\nThe following error was encountered: {:?}\n\
             \nIf you think this is a bug, please report it.",
             $x);
         }));
     };
-}
-/// Used to reset the panic hook with a new panic message.
-pub fn panic_set_reset_hook(error_msg: &'static str) {
-    // Unregister current panic hook
-    panic::take_hook();
-    // Sets the new panic hook with a custom panic message
-    setup_checkpwn_panic!(error_msg);
 }

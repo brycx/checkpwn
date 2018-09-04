@@ -35,6 +35,7 @@ use reqwest::header::UserAgent;
 use reqwest::StatusCode;
 use std::fs::File;
 use std::io::{BufReader, Error};
+use std::panic;
 
 pub const ACCOUNT: &str = "acc";
 pub const PASSWORD: &str = "pass";
@@ -83,8 +84,9 @@ pub fn arg_to_api_route(arg: &str, input_data: &str) -> String {
         ),
         "paste" => format_req(PASTE_ROUTE, &url_encoded, None, None),
         _ => {
-            errors::panic_set_reset_hook(errors::API_ARG_ERROR);
+            set_checkpwn_panic!(errors::API_ARG_ERROR);
             panic!();
+            //checkpwn_panic!(errors::API_ARG_ERROR);
         },
     }
 }
@@ -140,7 +142,7 @@ pub fn breach_report(status_code: StatusCode, searchterm: &str, is_password: boo
             true,
         ),
         _ => {
-            errors::panic_set_reset_hook(errors::STATUSCODE_ERROR);
+            set_checkpwn_panic!(errors::STATUSCODE_ERROR);
             panic!();
         },
     }
@@ -163,17 +165,17 @@ fn evaluate_acc_breach(
             breach_report(StatusCode::NotFound, &search_key, false)
         }
         (StatusCode::BadRequest, StatusCode::BadRequest) => {
-            errors::panic_set_reset_hook(errors::BAD_RESPONSE_ERROR);
+            set_checkpwn_panic!(errors::BAD_RESPONSE_ERROR);
             panic!();
         }
         // Since the account API both takes username and emails and situation where BadRequest
         // and NotFound are returned should never occur.
         (StatusCode::BadRequest, StatusCode::NotFound) => {
-            errors::panic_set_reset_hook(errors::BAD_RESPONSE_ERROR);
+            set_checkpwn_panic!(errors::BAD_RESPONSE_ERROR);
             panic!();
         }
         (StatusCode::BadRequest, StatusCode::Ok) => {
-            errors::panic_set_reset_hook(errors::BAD_RESPONSE_ERROR);
+            set_checkpwn_panic!(errors::BAD_RESPONSE_ERROR);
             panic!();
         }
         _ => breach_report(StatusCode::Ok, &search_key, false),
@@ -184,7 +186,7 @@ fn evaluate_acc_breach(
 pub fn breach_request(searchterm: &str, option_arg: &str) -> () {
     let client = reqwest::Client::new();
 
-    errors::panic_set_reset_hook(errors::NETWORK_ERROR);
+    set_checkpwn_panic!(errors::NETWORK_ERROR);
 
     let acc_stat = client
         .get(&arg_to_api_route(option_arg, searchterm))
@@ -202,7 +204,7 @@ pub fn breach_request(searchterm: &str, option_arg: &str) -> () {
 
 /// Read file into buffer.
 pub fn read_file(path: &str) -> Result<BufReader<File>, Error> {
-    errors::panic_set_reset_hook(errors::READ_FILE_ERROR);
+    set_checkpwn_panic!(errors::READ_FILE_ERROR);
 
     let file_path = File::open(path).unwrap();
     let file = BufReader::new(file_path);
