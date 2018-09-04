@@ -52,7 +52,7 @@ fn main() {
 
     let option_arg = argvs[1].to_lowercase();
 
-    let mut data_search = String::new();
+    let mut data_search: String;
 
     match &option_arg as &str {
         api::ACCOUNT => {
@@ -73,7 +73,7 @@ fn main() {
 
     if option_arg == api::ACCOUNT {
         // Check if user wants to check a local list
-        if data_search.to_owned().ends_with(".ls") {
+        if data_search.ends_with(".ls") {
             api::errors::panic_set_reset_hook(api::errors::BUFREADER_ERROR);
             let file = api::read_file(&data_search).unwrap();
 
@@ -88,6 +88,9 @@ fn main() {
                     _ => (),
                 };
                 api::breach_request(&line, &option_arg);
+
+                // Only one request every 1500 miliseconds from any given IP
+                thread::sleep(time::Duration::from_millis(1600));
             }
         } else {
             api::breach_request(&data_search, &option_arg);
