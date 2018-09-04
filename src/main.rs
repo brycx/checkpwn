@@ -40,7 +40,7 @@ use std::process::Command;
 use std::{env, thread, time};
 
 fn main() {
-    let argvs: Vec<String> = env::args().collect();
+    let mut argvs: Vec<String> = env::args().collect();
     // Set custom usage panic message
     set_checkpwn_panic!(api::errors::USAGE_ERROR);
 
@@ -124,7 +124,11 @@ fn main() {
 
     // Zero out the data_search argument, especially important if this was a password
     Clear::clear(&mut data_search);
-
+    // Zero out the collected arguments, in case the user accidentally inputs the password as
+    // runtime argument
+    for argument in argvs.iter_mut() {
+        Clear::clear(&mut *argument);
+    }
     // Only one request every 1500 miliseconds from any given IP
     thread::sleep(time::Duration::from_millis(1600));
 }
