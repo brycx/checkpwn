@@ -15,7 +15,6 @@ sha-1 = "0.7.0"
 hex = "0.3.2"
 reqwest = "0.8.8"
 rpassword = "2.0.0"
-percent-encoding = "1.0.1"
 clear_on_drop = "0.2.3"
 
 [dev-dependencies]

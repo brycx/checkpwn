@@ -23,14 +23,12 @@
 extern crate clear_on_drop;
 extern crate colored;
 extern crate hex;
-extern crate percent_encoding;
 extern crate reqwest;
 extern crate sha1;
 #[macro_use]
 pub mod errors;
 
 use self::colored::Colorize;
-use self::percent_encoding::{utf8_percent_encode, DEFAULT_ENCODE_SET};
 use self::sha1::{Digest, Sha1};
 use clear_on_drop::clear::Clear;
 use reqwest::header::UserAgent;
@@ -92,14 +90,10 @@ fn format_req(
 /// Take the user-supplied command-line arugments and make a URL for the HIBP API.
 /// If the `pass` argument has been selected, `input_data` needs to be the hashed password.
 pub fn arg_to_api_route(arg: &CheckableChoices, input_data: &str) -> String {
-    // URL encode the input data when it's a user-supplied argument
-    // SHA-1 hashes can safely be passed as-is
-    let url_encoded = utf8_percent_encode(input_data, DEFAULT_ENCODE_SET).to_string();
-
     match arg {
         CheckableChoices::ACC => format_req(
             arg,
-            &url_encoded,
+            input_data,
             Some("includeUnverified=true"),
             Some("truncateResponse=true"),
         ),
@@ -110,7 +104,12 @@ pub fn arg_to_api_route(arg: &CheckableChoices, input_data: &str) -> String {
             None,
             None,
         ),
-        CheckableChoices::PASTE => format_req(arg, &url_encoded, None, None),
+        CheckableChoices::PASTE => format_req(
+            arg,
+            input_data,
+            None,
+            None
+        ),
     }
 }
 
