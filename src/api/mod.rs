@@ -86,7 +86,6 @@ pub fn arg_to_api_route(arg: &str, input_data: &str) -> String {
         _ => {
             set_checkpwn_panic!(errors::API_ARG_ERROR);
             panic!();
-            //checkpwn_panic!(errors::API_ARG_ERROR);
         },
     }
 }
