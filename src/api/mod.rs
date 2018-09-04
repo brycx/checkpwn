@@ -104,12 +104,7 @@ pub fn arg_to_api_route(arg: &CheckableChoices, input_data: &str) -> String {
             None,
             None,
         ),
-        CheckableChoices::PASTE => format_req(
-            arg,
-            input_data,
-            None,
-            None
-        ),
+        CheckableChoices::PASTE => format_req(arg, input_data, None, None),
     }
 }
 
