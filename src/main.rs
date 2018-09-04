@@ -39,6 +39,59 @@ use std::panic;
 use std::process::Command;
 use std::{env, thread, time};
 
+fn acc_check(data_search: &str) {
+    // Check if user wants to check a local list
+    if data_search.ends_with(".ls") {
+        set_checkpwn_panic!(api::errors::BUFREADER_ERROR);
+        let file = api::read_file(data_search).unwrap();
+
+        for line_iter in file.lines() {
+            set_checkpwn_panic!(api::errors::READLINE_ERROR);
+            let line = api::strip_white_new(&line_iter.unwrap());
+
+            match line.as_str() {
+                "\n" => continue,
+                "\t" => continue,
+                "" => continue,
+                _ => (),
+            };
+            api::breach_request(&line, "acc");
+
+            // Only one request every 1500 miliseconds from any given IP
+            thread::sleep(time::Duration::from_millis(1600));
+        }
+    } else {
+        api::breach_request(data_search, "acc");
+    }
+}
+
+fn pass_check(data_search: &str) {
+    let client = reqwest::Client::new();
+
+    let mut hashed_password = api::hash_password(data_search);
+    let mut uri_acc = api::arg_to_api_route("pass", &hashed_password);
+    set_checkpwn_panic!(api::errors::NETWORK_ERROR);
+    let mut pass_stat = client
+        .get(&uri_acc)
+        .header(UserAgent::new(api::USER_AGENT))
+        .send()
+        .unwrap();
+
+    set_checkpwn_panic!(api::errors::DECODING_ERROR);
+    let pass_body: String = pass_stat.text().unwrap();
+    let breach_bool = api::search_in_range(api::split_range(&pass_body), &hashed_password);
+
+    if breach_bool {
+        api::breach_report(pass_stat.status(), data_search, true);
+    } else {
+        api::breach_report(StatusCode::NotFound, data_search, true);
+    }
+
+    // Zero out as this contains a weakly hashed password
+    Clear::clear(&mut uri_acc);
+    Clear::clear(&mut hashed_password);
+}
+
 fn main() {
     let mut argvs: Vec<String> = env::args().collect();
     // Set custom usage panic message
@@ -51,7 +104,6 @@ fn main() {
     }
 
     let option_arg = argvs[1].to_lowercase();
-
     let mut data_search: String;
 
     match &option_arg as &str {
@@ -60,6 +112,7 @@ fn main() {
                 panic!();
             }
             data_search = argvs[2].to_owned();
+            acc_check(&data_search);
         }
         api::PASSWORD => {
             if argvs.len() != 2 {
@@ -67,60 +120,10 @@ fn main() {
             }
             set_checkpwn_panic!(api::errors::PASSWORD_ERROR);
             data_search = rpassword::prompt_password_stdout("Password: ").unwrap();
+            pass_check(&data_search);
         }
         _ => panic!(),
     };
-
-    if option_arg == api::ACCOUNT {
-        // Check if user wants to check a local list
-        if data_search.ends_with(".ls") {
-            set_checkpwn_panic!(api::errors::BUFREADER_ERROR);
-            let file = api::read_file(&data_search).unwrap();
-
-            for line_iter in file.lines() {
-                set_checkpwn_panic!(api::errors::READLINE_ERROR);
-                let line = api::strip_white_new(&line_iter.unwrap());
-
-                match line.as_str() {
-                    "\n" => continue,
-                    "\t" => continue,
-                    "" => continue,
-                    _ => (),
-                };
-                api::breach_request(&line, &option_arg);
-
-                // Only one request every 1500 miliseconds from any given IP
-                thread::sleep(time::Duration::from_millis(1600));
-            }
-        } else {
-            api::breach_request(&data_search, &option_arg);
-        }
-    } else if option_arg == api::PASSWORD {
-        let client = reqwest::Client::new();
-
-        let mut hashed_password = api::hash_password(&data_search);
-        let mut uri_acc = api::arg_to_api_route(&option_arg, &hashed_password);
-        set_checkpwn_panic!(api::errors::NETWORK_ERROR);
-        let mut pass_stat = client
-            .get(&uri_acc)
-            .header(UserAgent::new(api::USER_AGENT))
-            .send()
-            .unwrap();
-
-        set_checkpwn_panic!(api::errors::DECODING_ERROR);
-        let pass_body: String = pass_stat.text().unwrap();
-        let breach_bool = api::search_in_range(api::split_range(&pass_body), &hashed_password);
-
-        if breach_bool {
-            api::breach_report(pass_stat.status(), &data_search, true);
-        } else {
-            api::breach_report(StatusCode::NotFound, &data_search, true);
-        }
-
-        // Zero out as this contains a weakly hashed password
-        Clear::clear(&mut uri_acc);
-        Clear::clear(&mut hashed_password);
-    }
 
     // Zero out the data_search argument, especially important if this was a password
     Clear::clear(&mut data_search);
