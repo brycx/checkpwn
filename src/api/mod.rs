@@ -1,8 +1,32 @@
+// MIT License
+
+// Copyright (c) 2018 brycx
+
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+
+// The above copyright notice and this permission notice shall be included in all
+// copies or substantial portions of the Software.
+
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+// SOFTWARE.
+
 extern crate colored;
 extern crate hex;
 extern crate percent_encoding;
 extern crate reqwest;
 extern crate sha1;
+#[macro_use]
+pub mod errors;
 
 use self::colored::Colorize;
 use self::percent_encoding::{utf8_percent_encode, DEFAULT_ENCODE_SET};
@@ -58,7 +82,10 @@ pub fn arg_to_api_route(arg: &str, input_data: &str) -> String {
             None,
         ),
         "paste" => format_req(PASTE_ROUTE, &url_encoded, None, None),
-        _ => panic!("Invalid option {}", arg),
+        _ => {
+            errors::panic_set_reset_hook(errors::API_ARG_ERROR);
+            panic!();
+        },
     }
 }
 
@@ -112,7 +139,10 @@ pub fn breach_report(status_code: StatusCode, searchterm: &str, is_password: boo
             ),
             true,
         ),
-        _ => panic!("Unrecognized StatusCode detected"),
+        _ => {
+            errors::panic_set_reset_hook(errors::STATUSCODE_ERROR);
+            panic!();
+        },
     }
 }
 
@@ -122,9 +152,6 @@ fn evaluate_acc_breach(
     paste_stat: StatusCode,
     search_key: &str,
 ) -> ((), bool) {
-    let err = "HIBP returned Bad Request on account: ".to_string()
-        + search_key
-        + " - Make sure it is a valid account.";
 
     match (acc_stat, paste_stat) {
         (StatusCode::NotFound, StatusCode::NotFound) => {
@@ -136,15 +163,18 @@ fn evaluate_acc_breach(
             breach_report(StatusCode::NotFound, &search_key, false)
         }
         (StatusCode::BadRequest, StatusCode::BadRequest) => {
-            panic!(err);
+            errors::panic_set_reset_hook(errors::BAD_RESPONSE_ERROR);
+            panic!();
         }
         // Since the account API both takes username and emails and situation where BadRequest
         // and NotFound are returned should never occur.
         (StatusCode::BadRequest, StatusCode::NotFound) => {
-            panic!(err);
+            errors::panic_set_reset_hook(errors::BAD_RESPONSE_ERROR);
+            panic!();
         }
         (StatusCode::BadRequest, StatusCode::Ok) => {
-            panic!(err);
+            errors::panic_set_reset_hook(errors::BAD_RESPONSE_ERROR);
+            panic!();
         }
         _ => breach_report(StatusCode::Ok, &search_key, false),
     }
@@ -154,23 +184,27 @@ fn evaluate_acc_breach(
 pub fn breach_request(searchterm: &str, option_arg: &str) -> () {
     let client = reqwest::Client::new();
 
+    errors::panic_set_reset_hook(errors::NETWORK_ERROR);
+
     let acc_stat = client
         .get(&arg_to_api_route(option_arg, searchterm))
         .header(UserAgent::new(USER_AGENT))
         .send()
-        .expect("FAILED TO SEND ACC CLIENT REQUEST");
+        .unwrap();
     let paste_stat = client
         .get(&arg_to_api_route("paste", searchterm))
         .header(UserAgent::new(USER_AGENT))
         .send()
-        .expect("FAILED TO SEND PASTE CLIENT REQUEST");
+        .unwrap();
 
     evaluate_acc_breach(acc_stat.status(), paste_stat.status(), searchterm);
 }
 
 /// Read file into buffer.
 pub fn read_file(path: &str) -> Result<BufReader<File>, Error> {
-    let file_path = File::open(path).expect("FILE NOT FOUND");
+    errors::panic_set_reset_hook(errors::READ_FILE_ERROR);
+
+    let file_path = File::open(path).unwrap();
     let file = BufReader::new(file_path);
 
     Ok(file)
