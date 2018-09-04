@@ -77,9 +77,9 @@ fn pass_check(data_search: &api::PassArg) {
     let breach_bool = api::search_in_range(api::split_range(&pass_body), &hashed_password);
 
     if breach_bool {
-        api::breach_report(pass_stat.status(), &hashed_password, true);
+        api::breach_report(pass_stat.status(), "", true);
     } else {
-        api::breach_report(StatusCode::NotFound, &hashed_password, true);
+        api::breach_report(StatusCode::NotFound, "", true);
     }
 
     // Zero out as this contains a weakly hashed password
@@ -110,8 +110,7 @@ fn main() {
         }
         _ => panic!(),
     };
-    // Zero out the collected arguments, in case the user accidentally inputs the password as
-    // runtime argument
+    // Zero out the collected arguments, in case the user accidentally inputs sensitive info
     for argument in &mut argvs.iter_mut() {
         Clear::clear(&mut *argument);
     }
