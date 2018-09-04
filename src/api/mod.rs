@@ -33,21 +33,37 @@ use self::percent_encoding::{utf8_percent_encode, DEFAULT_ENCODE_SET};
 use self::sha1::{Digest, Sha1};
 use reqwest::header::UserAgent;
 use reqwest::StatusCode;
+
 use std::fs::File;
 use std::io::{BufReader, Error};
 use std::panic;
 
-pub const ACCOUNT: &str = "acc";
-pub const PASSWORD: &str = "pass";
 pub const USER_AGENT: &str = "checkpwn - cargo utility tool for hibp";
 
-static ACC_ROUTE: &str = "https://haveibeenpwned.com/api/v2/breachedaccount/";
-static PASS_ROUTE: &str = "https://api.pwnedpasswords.com/range/";
-static PASTE_ROUTE: &str = "https://haveibeenpwned.com/api/v2/pasteaccount/";
+pub enum CheckableChoices {
+    ACC,
+    PASS,
+    PASTE,
+}
+
+impl CheckableChoices {
+    fn get_api_route(&self) -> &'static str {
+        match self {
+            CheckableChoices::ACC => "https://haveibeenpwned.com/api/v2/breachedaccount/",
+            CheckableChoices::PASS => "https://api.pwnedpasswords.com/range/",
+            CheckableChoices::PASTE => "https://haveibeenpwned.com/api/v2/pasteaccount/",
+        }
+    }
+}
 
 /// Format an API request to fit multiple parameters.
-fn format_req(api_route: &str, search_term: &str, p3: Option<&str>, p4: Option<&str>) -> String {
-    let mut request = String::from(api_route);
+fn format_req(
+    api_route: &CheckableChoices,
+    search_term: &str,
+    p3: Option<&str>,
+    p4: Option<&str>,
+) -> String {
+    let mut request = String::from(api_route.get_api_route());
     request.push_str(search_term);
 
     if let Some(ref path3) = p3 {
@@ -63,30 +79,26 @@ fn format_req(api_route: &str, search_term: &str, p3: Option<&str>, p4: Option<&
 
 /// Take the user-supplied command-line arugments and make a URL for the HIBP API.
 /// If the `pass` argument has been selected, `input_data` needs to be the hashed password.
-pub fn arg_to_api_route(arg: &str, input_data: &str) -> String {
+pub fn arg_to_api_route(arg: &CheckableChoices, input_data: &str) -> String {
     // URL encode the input data when it's a user-supplied argument
     // SHA-1 hashes can safely be passed as-is
     let url_encoded = utf8_percent_encode(input_data, DEFAULT_ENCODE_SET).to_string();
 
     match arg {
-        ACCOUNT => format_req(
-            ACC_ROUTE,
+        CheckableChoices::ACC => format_req(
+            arg,
             &url_encoded,
             Some("includeUnverified=true"),
             Some("truncateResponse=true"),
         ),
-        PASSWORD => format_req(
-            PASS_ROUTE,
+        CheckableChoices::PASS => format_req(
+            arg,
             // Only send the first 5 chars to the password range API
             &input_data[..5],
             None,
             None,
         ),
-        "paste" => format_req(PASTE_ROUTE, &url_encoded, None, None),
-        _ => {
-            set_checkpwn_panic!(errors::API_ARG_ERROR);
-            panic!();
-        }
+        CheckableChoices::PASTE => format_req(arg, &url_encoded, None, None),
     }
 }
 
@@ -187,12 +199,12 @@ pub fn acc_breach_request(searchterm: &str) -> () {
     set_checkpwn_panic!(errors::NETWORK_ERROR);
 
     let acc_stat = client
-        .get(&arg_to_api_route("acc", searchterm))
+        .get(&arg_to_api_route(&CheckableChoices::ACC, searchterm))
         .header(UserAgent::new(USER_AGENT))
         .send()
         .unwrap();
     let paste_stat = client
-        .get(&arg_to_api_route("paste", searchterm))
+        .get(&arg_to_api_route(&CheckableChoices::ACC, searchterm))
         .header(UserAgent::new(USER_AGENT))
         .send()
         .unwrap();
@@ -220,8 +232,12 @@ pub fn hash_password(password: &str) -> String {
 }
 
 /// Strip all whitespace and all newlines from a given string.
-pub fn strip_white_new(string: &str) -> String {
-    string.replace("\n", "").replace(" ", "").replace("\'", "'")
+pub fn strip(string: &str) -> String {
+    string
+        .replace("\n", "")
+        .replace(" ", "")
+        .replace("\'", "'")
+        .replace("\t", "")
 }
 
 #[test]
@@ -230,12 +246,9 @@ fn test_strip_white_new() {
     let string_2 = String::from("derbrererer\n");
     let string_3 = String::from("dee\nwfweww   rb  tte rererer\n");
 
-    assert_eq!(
-        &strip_white_new(&string_1),
-        "fkljjsdjlksfdkljdfiwjwefwefwfe"
-    );
-    assert_eq!(&strip_white_new(&string_2), "derbrererer");
-    assert_eq!(&strip_white_new(&string_3), "deewfwewwrbtterererer");
+    assert_eq!(&strip(&string_1), "fkljjsdjlksfdkljdfiwjwefwefwfe");
+    assert_eq!(&strip(&string_2), "derbrererer");
+    assert_eq!(&strip(&string_3), "deewfwewwrbtterererer");
 }
 
 #[test]
@@ -290,20 +303,15 @@ fn test_evaluate_breach_panic_3() {
 #[test]
 fn test_make_req_and_arg_to_route() {
     // API paths taken from https://haveibeenpwned.com/API/v2
-    let first_path = format_req(
-        "https://haveibeenpwned.com/api/v2/breachedaccount/",
-        "test@example.com",
-        None,
-        None,
-    );
+    let first_path = format_req(&CheckableChoices::ACC, "test@example.com", None, None);
     let second_path = format_req(
-        "https://haveibeenpwned.com/api/v2/breachedaccount/",
+        &CheckableChoices::ACC,
         "test@example.com",
         Some("includeUnverified=true"),
         None,
     );
     let third_path = format_req(
-        "https://haveibeenpwned.com/api/v2/breachedaccount/",
+        &CheckableChoices::ACC,
         "test@example.com",
         Some("includeUnverified=true"),
         Some("truncateResponse=true"),
@@ -319,29 +327,23 @@ fn test_make_req_and_arg_to_route() {
     );
     assert_eq!(third_path, "https://haveibeenpwned.com/api/v2/breachedaccount/test@example.com?includeUnverified=true&truncateResponse=true");
 
-    assert_eq!(third_path, arg_to_api_route("acc", "test@example.com"));
+    assert_eq!(
+        third_path,
+        arg_to_api_route(&CheckableChoices::ACC, "test@example.com")
+    );
     assert_eq!(
         "https://api.pwnedpasswords.com/range/B1B37",
-        arg_to_api_route("pass", &hash_password("qwerty"))
+        arg_to_api_route(&CheckableChoices::PASS, &hash_password("qwerty"))
     );
     assert_eq!(
         "https://haveibeenpwned.com/api/v2/pasteaccount/test@example.com",
-        arg_to_api_route("paste", "test@example.com")
+        arg_to_api_route(&CheckableChoices::PASTE, "test@example.com")
     );
 }
 
 #[test]
 fn test_good_argument() {
-    let option_arg = String::from("acc");
-    let data_search = String::from("test@example.com");
-
-    arg_to_api_route(&option_arg, &data_search);
-}
-
-#[should_panic]
-#[test]
-fn test_invalid_argument() {
-    let option_arg = String::from("badoption");
+    let option_arg = CheckableChoices::ACC;
     let data_search = String::from("test@example.com");
 
     arg_to_api_route(&option_arg, &data_search);

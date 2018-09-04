@@ -47,14 +47,10 @@ fn acc_check(data_search: &str) {
 
         for line_iter in file.lines() {
             set_checkpwn_panic!(api::errors::READLINE_ERROR);
-            let line = api::strip_white_new(&line_iter.unwrap());
-
-            match line.as_str() {
-                "\n" => continue,
-                "\t" => continue,
-                "" => continue,
-                _ => (),
-            };
+            let line = api::strip(&line_iter.unwrap());
+            if line.is_empty() {
+                continue;
+            }
             api::acc_breach_request(&line);
 
             // Only one request every 1500 miliseconds from any given IP
@@ -69,7 +65,7 @@ fn pass_check(data_search: &str) {
     let client = reqwest::Client::new();
 
     let mut hashed_password = api::hash_password(data_search);
-    let mut uri_acc = api::arg_to_api_route("pass", &hashed_password);
+    let mut uri_acc = api::arg_to_api_route(&api::CheckableChoices::PASS, &hashed_password);
     set_checkpwn_panic!(api::errors::NETWORK_ERROR);
     let mut pass_stat = client
         .get(&uri_acc)
@@ -93,33 +89,24 @@ fn pass_check(data_search: &str) {
 }
 
 fn main() {
-    let mut argvs: Vec<String> = env::args().collect();
     // Set custom usage panic message
     set_checkpwn_panic!(api::errors::USAGE_ERROR);
+    assert!(env::args().len() >= 2);
 
-    if argvs.len() >= 2 {
-        ()
-    } else {
-        panic!();
-    }
-
+    let mut argvs: Vec<String> = env::args().collect();
     let option_arg = argvs[1].to_lowercase();
-    let mut data_search: String;
+    let mut data_search = String::from("");
 
     match &option_arg as &str {
-        api::ACCOUNT => {
-            if argvs.len() != 3 {
-                panic!();
-            }
-            data_search = argvs[2].to_owned();
+        "acc" => {
+            assert!(argvs.len() == 3);
+            let data_search = argvs[2].to_owned();
             acc_check(&data_search);
         }
-        api::PASSWORD => {
-            if argvs.len() != 2 {
-                panic!();
-            }
+        "pass" => {
+            assert!(argvs.len() == 2);
             set_checkpwn_panic!(api::errors::PASSWORD_ERROR);
-            data_search = rpassword::prompt_password_stdout("Password: ").unwrap();
+            let data_search = rpassword::prompt_password_stdout("Password: ").unwrap();
             pass_check(&data_search);
         }
         _ => panic!(),
@@ -129,7 +116,7 @@ fn main() {
     Clear::clear(&mut data_search);
     // Zero out the collected arguments, in case the user accidentally inputs the password as
     // runtime argument
-    for argument in argvs.iter_mut() {
+    for argument in &mut argvs.iter_mut() {
         Clear::clear(&mut *argument);
     }
     // Only one request every 1500 miliseconds from any given IP
