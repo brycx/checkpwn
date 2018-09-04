@@ -28,8 +28,10 @@ pub const PASSWORD_ERROR: &str = "Error retrieving password from stdin";
 pub const READ_FILE_ERROR: &str = "Error reading local file";
 pub const NETWORK_ERROR: &str = "Failed to send request to HIBP";
 pub const DECODING_ERROR: &str = "Failed to decode response from HIBP";
-pub const API_ARG_ERROR: &str = "SHOULD_BE_UNREACHABLE: Invalid argument in API route construction detected";
-pub const BAD_RESPONSE_ERROR: &str = "Recevied a bad response from HIBP - make sure the account is valid";
+pub const API_ARG_ERROR: &str =
+    "SHOULD_BE_UNREACHABLE: Invalid argument in API route construction detected";
+pub const BAD_RESPONSE_ERROR: &str =
+    "Recevied a bad response from HIBP - make sure the account is valid";
 pub const BUFREADER_ERROR: &str = "Failed to read file in to BufReader";
 pub const READLINE_ERROR: &str = "Failed to read line from file";
 
@@ -38,9 +40,11 @@ macro_rules! set_checkpwn_panic {
     ($x:expr) => {
         // Set new hook with custom message
         panic::set_hook(Box::new(|_| {
-            println!("\nThe following error was encountered: {:?}\n\
-            \nIf you think this is a bug, please report it.",
-            $x);
+            println!(
+                "\nThe following error was encountered: {:?}\n\
+                 \nIf you think this is a bug, please report it.",
+                $x
+            );
         }));
     };
 }

@@ -86,7 +86,7 @@ pub fn arg_to_api_route(arg: &str, input_data: &str) -> String {
         _ => {
             set_checkpwn_panic!(errors::API_ARG_ERROR);
             panic!();
-        },
+        }
     }
 }
 
@@ -143,7 +143,7 @@ pub fn breach_report(status_code: StatusCode, searchterm: &str, is_password: boo
         _ => {
             set_checkpwn_panic!(errors::STATUSCODE_ERROR);
             panic!();
-        },
+        }
     }
 }
 
@@ -153,7 +153,6 @@ fn evaluate_acc_breach(
     paste_stat: StatusCode,
     search_key: &str,
 ) -> ((), bool) {
-
     match (acc_stat, paste_stat) {
         (StatusCode::NotFound, StatusCode::NotFound) => {
             breach_report(StatusCode::NotFound, &search_key, false)
