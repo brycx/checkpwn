@@ -79,7 +79,7 @@ fn pass_check(data_search: &api::PassArg) {
     if breach_bool {
         api::breach_report(pass_stat.status(), "", true);
     } else {
-        api::breach_report(StatusCode::NotFound, "", true);
+        api::breach_report(StatusCode::NOT_FOUND, "", true);
     }
 
     // Zero out as this contains a weakly hashed password
