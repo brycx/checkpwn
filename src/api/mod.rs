@@ -31,14 +31,14 @@ pub mod errors;
 use self::colored::Colorize;
 use self::sha1::{Digest, Sha1};
 use clear_on_drop::clear::Clear;
-use reqwest::header::UserAgent;
+use reqwest::header;
 use reqwest::StatusCode;
 
 use std::fs::File;
 use std::io::{BufReader, Error};
 use std::panic;
 
-pub const USER_AGENT: &str = "checkpwn - cargo utility tool for hibp";
+pub const CHECKPWN_USER_AGENT: &str = "checkpwn - cargo utility tool for hibp";
 
 pub enum CheckableChoices {
     ACC,
@@ -200,18 +200,22 @@ fn evaluate_acc_breach(
 
 /// HIBP breach request used for `acc` arguments.
 pub fn acc_breach_request(searchterm: &str) -> () {
-    let client = reqwest::Client::new();
+    let mut headers = header::HeaderMap::new();
+    headers.insert(header::USER_AGENT, header::HeaderValue::from_static(CHECKPWN_USER_AGENT));
+
+    let client = reqwest::Client::builder()
+        .default_headers(headers)
+        .build()
+        .unwrap();
 
     set_checkpwn_panic!(errors::NETWORK_ERROR);
 
     let acc_stat = client
         .get(&arg_to_api_route(&CheckableChoices::ACC, searchterm))
-        .header(UserAgent::new(USER_AGENT))
         .send()
         .unwrap();
     let paste_stat = client
         .get(&arg_to_api_route(&CheckableChoices::ACC, searchterm))
-        .header(UserAgent::new(USER_AGENT))
         .send()
         .unwrap();
 

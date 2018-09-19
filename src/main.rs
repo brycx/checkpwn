@@ -31,7 +31,7 @@ pub mod api;
 #[cfg(test)]
 use assert_cmd::prelude::*;
 use clear_on_drop::clear::Clear;
-use reqwest::header::UserAgent;
+use reqwest::header;
 use reqwest::StatusCode;
 use std::io::BufRead;
 use std::panic;
@@ -61,14 +61,19 @@ fn acc_check(data_search: &str) {
 }
 
 fn pass_check(data_search: &api::PassArg) {
-    let client = reqwest::Client::new();
+    let mut headers = header::HeaderMap::new();
+    headers.insert(header::USER_AGENT, header::HeaderValue::from_static(api::CHECKPWN_USER_AGENT));
 
+    let client = reqwest::Client::builder()
+        .default_headers(headers)
+        .build()
+        .unwrap();
+        
     let mut hashed_password = api::hash_password(&data_search.password);
     let mut uri_acc = api::arg_to_api_route(&api::CheckableChoices::PASS, &hashed_password);
     set_checkpwn_panic!(api::errors::NETWORK_ERROR);
     let mut pass_stat = client
         .get(&uri_acc)
-        .header(UserAgent::new(api::USER_AGENT))
         .send()
         .unwrap();
 
