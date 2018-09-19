@@ -68,7 +68,7 @@ fn pass_check(data_search: &api::PassArg) {
         .default_headers(headers)
         .build()
         .unwrap();
-        
+
     let mut hashed_password = api::hash_password(&data_search.password);
     let mut uri_acc = api::arg_to_api_route(&api::CheckableChoices::PASS, &hashed_password);
     set_checkpwn_panic!(api::errors::NETWORK_ERROR);

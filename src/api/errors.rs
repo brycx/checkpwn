@@ -42,7 +42,7 @@ macro_rules! set_checkpwn_panic {
         panic::set_hook(Box::new(|_| {
             println!(
                 "\nThe following error was encountered: {:?}\n\
-                 \nIf you think this is a bug, please report it.",
+                 \nIf you think this is a bug, please report it in the project repository.",
                 $x
             );
         }));
