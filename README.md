@@ -4,12 +4,12 @@ Check [Have I Been Pwned](https://haveibeenpwned.com/) and see if it's time for 
 
 ### Getting started
 
-#### Install
+#### Install:
 ```
 cargo install checkpwn
 ```
 
-#### Update
+#### Update:
 ```
 cargo install --force checkpwn
 ```
@@ -25,14 +25,14 @@ checkpwn acc daily_breach_check.ls
 
 _NOTE: List files must have the .ls file extension._
 
-When checking accounts like this they will be run against both the HIBP "paste" and "account" database.
+When checking accounts, they will be run against both the HIBP "paste" and "account" database.
 
-#### Check a password
+#### Check a password:
 ```
 checkpwn pass
 ```
 
-#### Usage demo
+#### Usage demo:
 
 [![asciicast](https://asciinema.org/a/2LfYpj7V86CjbAB4tc2WcgJP6.png)](https://asciinema.org/a/2LfYpj7V86CjbAB4tc2WcgJP6)
 
