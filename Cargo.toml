@@ -14,7 +14,7 @@ colored = "1.7"
 sha-1 = { version = "0.8.1", default-features = false }
 hex = "0.3.2"
 reqwest = "0.9.11"
-rpassword = "2.1.0"
+rpassword = "3.0.1"
 clear_on_drop = "0.2.3"
 
 [dev-dependencies]
