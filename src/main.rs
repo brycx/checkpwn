@@ -22,7 +22,7 @@
 
 #[cfg(test)]
 extern crate assert_cmd;
-extern crate clear_on_drop;
+extern crate zeroize;
 extern crate reqwest;
 extern crate rpassword;
 #[macro_use]
@@ -30,7 +30,7 @@ pub mod api;
 
 #[cfg(test)]
 use assert_cmd::prelude::*;
-use clear_on_drop::clear::Clear;
+use zeroize::Zeroize;
 use reqwest::header;
 use reqwest::StatusCode;
 use std::io::BufRead;
@@ -74,6 +74,7 @@ fn pass_check(data_search: &api::PassArg) {
 
     let mut hashed_password = api::hash_password(&data_search.password);
     let mut uri_acc = api::arg_to_api_route(&api::CheckableChoices::PASS, &hashed_password);
+    
     set_checkpwn_panic!(api::errors::NETWORK_ERROR);
     let mut pass_stat = client.get(&uri_acc).send().unwrap();
 
@@ -87,8 +88,8 @@ fn pass_check(data_search: &api::PassArg) {
     }
 
     // Zero out as this contains a weakly hashed password
-    Clear::clear(&mut uri_acc);
-    Clear::clear(&mut hashed_password);
+    uri_acc.zeroize();
+    hashed_password.zeroize();
 }
 
 fn main() {
@@ -115,8 +116,8 @@ fn main() {
         _ => panic!(),
     };
     // Zero out the collected arguments, in case the user accidentally inputs sensitive info
-    for argument in &mut argvs.iter_mut() {
-        Clear::clear(&mut *argument);
+    for argument in argvs.iter_mut() {
+        argument.zeroize();
     }
     // Only one request every 1500 miliseconds from any given IP
     thread::sleep(time::Duration::from_millis(1600));

@@ -20,7 +20,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-extern crate clear_on_drop;
+extern crate zeroize;
 extern crate colored;
 extern crate hex;
 extern crate reqwest;
@@ -30,7 +30,7 @@ pub mod errors;
 
 use self::colored::Colorize;
 use self::sha1::{Digest, Sha1};
-use clear_on_drop::clear::Clear;
+use zeroize::Zeroize;
 use reqwest::header;
 use reqwest::StatusCode;
 
@@ -62,7 +62,7 @@ pub struct PassArg {
 
 impl Drop for PassArg {
     fn drop(&mut self) {
-        Clear::clear(&mut self.password)
+        self.password.zeroize()
     }
 }
 
