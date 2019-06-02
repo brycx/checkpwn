@@ -73,7 +73,7 @@ fn pass_check(data_search: &api::PassArg) {
         .unwrap();
 
     let mut hashed_password = api::hash_password(&data_search.password);
-    let mut uri_acc = api::arg_to_api_route(&api::CheckableChoices::PASS, &hashed_password);
+    let uri_acc = api::arg_to_api_route(&api::CheckableChoices::PASS, &hashed_password);
 
     set_checkpwn_panic!(api::errors::NETWORK_ERROR);
     let mut pass_stat = client.get(&uri_acc).send().unwrap();
@@ -88,7 +88,6 @@ fn pass_check(data_search: &api::PassArg) {
     }
 
     // Zero out as this contains a weakly hashed password
-    uri_acc.zeroize();
     hashed_password.zeroize();
 }
 
