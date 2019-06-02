@@ -202,11 +202,9 @@ pub fn acc_breach_request(searchterm: &str) {
 /// Read file into buffer.
 pub fn read_file(path: &str) -> Result<BufReader<File>, Error> {
     set_checkpwn_panic!(errors::READ_FILE_ERROR);
-
     let file_path = File::open(path).unwrap();
-    let file = BufReader::new(file_path);
 
-    Ok(file)
+    Ok(BufReader::new(file_path))
 }
 
 /// Return SHA1 digest of string.
@@ -293,34 +291,8 @@ fn test_evaluate_breach_panic_3() {
 #[test]
 fn test_make_req_and_arg_to_route() {
     // API paths taken from https://haveibeenpwned.com/API/v2
-    let first_path = format_req(&CheckableChoices::ACC, "test@example.com", None, None);
-    let second_path = format_req(
-        &CheckableChoices::ACC,
-        "test@example.com",
-        Some("includeUnverified=true"),
-        None,
-    );
-    let third_path = format_req(
-        &CheckableChoices::ACC,
-        "test@example.com",
-        Some("includeUnverified=true"),
-        Some("truncateResponse=true"),
-    );
-
-    assert_eq!(
-        first_path,
-        "https://haveibeenpwned.com/api/v2/breachedaccount/test@example.com"
-    );
-    assert_eq!(
-        second_path,
-        "https://haveibeenpwned.com/api/v2/breachedaccount/test@example.com?includeUnverified=true"
-    );
-    assert_eq!(third_path, "https://haveibeenpwned.com/api/v2/breachedaccount/test@example.com?includeUnverified=true&truncateResponse=true");
-
-    assert_eq!(
-        third_path,
-        arg_to_api_route(&CheckableChoices::ACC, "test@example.com")
-    );
+    let path = format_req(&CheckableChoices::ACC, "test@example.com");
+    assert_eq!(path, "https://haveibeenpwned.com/api/v2/breachedaccount/test@example.com?includeUnverified=true&truncateResponse=true");
     assert_eq!(
         "https://api.pwnedpasswords.com/range/B1B37",
         arg_to_api_route(&CheckableChoices::PASS, &hash_password("qwerty"))
