@@ -20,19 +20,19 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-extern crate zeroize;
 extern crate colored;
 extern crate hex;
 extern crate reqwest;
 extern crate sha1;
+extern crate zeroize;
 #[macro_use]
 pub mod errors;
 
 use self::colored::Colorize;
 use self::sha1::{Digest, Sha1};
-use zeroize::Zeroize;
 use reqwest::header;
 use reqwest::StatusCode;
+use zeroize::Zeroize;
 
 use std::fs::File;
 use std::io::{BufReader, Error};
@@ -67,23 +67,18 @@ impl Drop for PassArg {
 }
 
 /// Format an API request to fit multiple parameters.
-fn format_req(
-    api_route: &CheckableChoices,
-    search_term: &str,
-    p3: Option<&str>,
-    p4: Option<&str>,
-) -> String {
+fn format_req(api_route: &CheckableChoices, search_term: &str) -> String {
     let mut request = String::from(api_route.get_api_route());
     request.push_str(search_term);
 
-    if let Some(ref path3) = p3 {
-        request.push_str("?");
-        request.push_str(path3)
-    };
-    if let Some(ref path4) = p4 {
-        request.push_str("&");
-        request.push_str(path4)
-    };
+    match api_route {
+        CheckableChoices::ACC => {
+            // Include unverified breaches and truncate the response.
+            request.push_str("?includeUnverified=true&truncateResponse=true");
+        }
+        _ => {}
+    }
+
     request
 }
 
@@ -91,20 +86,12 @@ fn format_req(
 /// If the `pass` argument has been selected, `input_data` needs to be the hashed password.
 pub fn arg_to_api_route(arg: &CheckableChoices, input_data: &str) -> String {
     match arg {
-        CheckableChoices::ACC => format_req(
-            arg,
-            input_data,
-            Some("includeUnverified=true"),
-            Some("truncateResponse=true"),
-        ),
         CheckableChoices::PASS => format_req(
             arg,
             // Only send the first 5 chars to the password range API
             &input_data[..5],
-            None,
-            None,
         ),
-        CheckableChoices::PASTE => format_req(arg, input_data, None, None),
+        _ => format_req(arg, input_data),
     }
 }
 

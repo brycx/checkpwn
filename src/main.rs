@@ -22,15 +22,14 @@
 
 #[cfg(test)]
 extern crate assert_cmd;
-extern crate zeroize;
 extern crate reqwest;
 extern crate rpassword;
+extern crate zeroize;
 #[macro_use]
 pub mod api;
 
 #[cfg(test)]
 use assert_cmd::prelude::*;
-use zeroize::Zeroize;
 use reqwest::header;
 use reqwest::StatusCode;
 use std::io::BufRead;
@@ -38,6 +37,7 @@ use std::panic;
 #[cfg(test)]
 use std::process::Command;
 use std::{env, thread, time};
+use zeroize::Zeroize;
 
 fn acc_check(data_search: &str) {
     // Check if user wants to check a local list
@@ -74,7 +74,7 @@ fn pass_check(data_search: &api::PassArg) {
 
     let mut hashed_password = api::hash_password(&data_search.password);
     let mut uri_acc = api::arg_to_api_route(&api::CheckableChoices::PASS, &hashed_password);
-    
+
     set_checkpwn_panic!(api::errors::NETWORK_ERROR);
     let mut pass_stat = client.get(&uri_acc).send().unwrap();
 
