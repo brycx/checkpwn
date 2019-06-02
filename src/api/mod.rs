@@ -108,32 +108,18 @@ pub fn arg_to_api_route(arg: &CheckableChoices, input_data: &str) -> String {
     }
 }
 
-/// Take a response from quering password range API and split it into vector of strings.
-pub fn split_range(range_string: &str) -> Vec<String> {
-    // Split up range_string into vector of strings for each newline
-    let mut range_vector: Vec<String> = vec![];
-    // Each string truncated to only be the hash, no whitespaces
-    // All hashes here have a length of 35, so the useless gets dropped
-    range_string
-        .lines()
-        .for_each(|line| range_vector.push(String::from(&line[..35])));
-
-    range_vector
-}
-
-/// Find matching key in recevied set of keys that has been split with `split_range`.
-pub fn search_in_range(search_space: Vec<String>, hashed_key: &str) -> bool {
-    let mut res = false;
-
-    for hash in search_space {
-        // Don't include first five chars of own password, as this also
-        // is how the HIBP API returns passwords
-        if hash == hashed_key[5..] {
-            res = true;
-            break;
+/// Find matching key in recevied set of keys.
+pub fn search_in_range(password_range_response: &str, hashed_key: &str) -> bool {
+    for line in password_range_response.lines() {
+        // Each response is truncated to only be the hash, no whitespaces, etc.
+        // All hashes here have a length of 35, so the useless gets dropped by
+        // slicing. Don't include first five characters of own password, as 
+        // this also is how the HIBP API returns passwords.
+        if line[..35] == hashed_key[5..] {
+            return true;
         }
     }
-    res
+    return false;   
 }
 
 /// Make a breach report based on StatusCode and print result to temrinal.
@@ -366,50 +352,6 @@ fn test_breach_invalid_status() {
 }
 
 #[test]
-fn test_split_in_range() {
-    // From https://api.pwnedpasswords.com/range/21BD1
-    let response = String::from(
-        "0018A45C4D1DEF81644B54AB7F969B88D65:1
-00D4F6E8FA6EECAD2A3AA415EEC418D38EC:2
-011053FD0102E94D6AE2F8B83D76FAF94F6:1
-012A7CA357541F0AC487871FEEC1891C49C:2
-0136E006E24E7D152139815FB0FC6A50B15:3
-01A85766CD276B17DE6DA022AA3CADAC3CE:3
-024067E46835A540D6454DF5D1764F6AA63:3
-02551CADE5DDB7F0819C22BFBAAC6705182:1
-025B243055753383B479EF34B44B562701D:2
-02A56D549B5929D7CD58EEFA97BFA3DDDB3:8
-02F1C470B30D5DDFF9E914B90D35AB7A38F:3
-03052B53A891BDEA802D11691B9748C12DC:6
-041F514246F050C31B6B5B36CD626C398CA:1
-043542C12858C639D087F8F500BCDA56267:4
-044768D0FA7FFF8A0E83B45429D483FF243:1",
-    );
-
-    let expected = String::from(
-        "0018A45C4D1DEF81644B54AB7F969B88D65
-00D4F6E8FA6EECAD2A3AA415EEC418D38EC
-011053FD0102E94D6AE2F8B83D76FAF94F6
-012A7CA357541F0AC487871FEEC1891C49C
-0136E006E24E7D152139815FB0FC6A50B15
-01A85766CD276B17DE6DA022AA3CADAC3CE
-024067E46835A540D6454DF5D1764F6AA63
-02551CADE5DDB7F0819C22BFBAAC6705182
-025B243055753383B479EF34B44B562701D
-02A56D549B5929D7CD58EEFA97BFA3DDDB3
-02F1C470B30D5DDFF9E914B90D35AB7A38F
-03052B53A891BDEA802D11691B9748C12DC
-041F514246F050C31B6B5B36CD626C398CA
-043542C12858C639D087F8F500BCDA56267
-044768D0FA7FFF8A0E83B45429D483FF243",
-    );
-
-    let excp_vec: Vec<_> = expected.lines().collect();
-
-    assert_eq!(split_range(&response), excp_vec);
-}
-
-#[test]
 fn test_search_succes_and_failure() {
     // https://api.pwnedpasswords.com/range/B1B37
 
@@ -444,11 +386,11 @@ fn test_search_succes_and_failure() {
     let hashed_password = hash_password("qwerty");
 
     assert_eq!(
-        search_in_range(split_range(&contains_pass), &hashed_password),
+        search_in_range(&contains_pass, &hashed_password),
         true
     );
     assert_eq!(
-        search_in_range(split_range(&no_pass), &hashed_password),
+        search_in_range(&no_pass, &hashed_password),
         false
     );
 }

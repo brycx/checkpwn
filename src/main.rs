@@ -79,7 +79,7 @@ fn pass_check(data_search: &api::PassArg) {
 
     set_checkpwn_panic!(api::errors::DECODING_ERROR);
     let pass_body: String = pass_stat.text().unwrap();
-    let breach_bool = api::search_in_range(api::split_range(&pass_body), &hashed_password);
+    let breach_bool = api::search_in_range(&pass_body, &hashed_password);
 
     if breach_bool {
         api::breach_report(pass_stat.status(), "", true);
