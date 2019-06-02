@@ -205,7 +205,7 @@ pub fn acc_breach_request(searchterm: &str) {
         .send()
         .unwrap();
     let paste_stat = client
-        .get(&arg_to_api_route(&CheckableChoices::ACC, searchterm))
+        .get(&arg_to_api_route(&CheckableChoices::PASTE, searchterm))
         .send()
         .unwrap();
 
