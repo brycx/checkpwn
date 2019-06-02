@@ -32,5 +32,9 @@ When checking accounts, they will be run against both the HIBP "paste" and "acco
 checkpwn pass
 ```
 
+### Changelog
+
+See [here](https://github.com/brycx/checkpwn/releases).
+
 ### License
 checkpwn is licensed under the MIT license. See the `LICENSE` file for more information.
