@@ -1,6 +1,6 @@
 [package]
 name = "checkpwn"
-version = "0.2.8"
+version = "0.3.0"
 authors = ["brycx <brycx@protonmail.com>"]
 description = "Check Have I Been Pwned and see if it's time for you to change passwords."
 keywords = [ "cli", "password", "security", "HIBP" ]
