@@ -62,7 +62,10 @@ fn acc_check(data_search: &str) {
 
 fn pass_check(data_search: &api::PassArg) {
     let mut headers = header::HeaderMap::new();
-    headers.insert(header::USER_AGENT, header::HeaderValue::from_static(api::CHECKPWN_USER_AGENT));
+    headers.insert(
+        header::USER_AGENT,
+        header::HeaderValue::from_static(api::CHECKPWN_USER_AGENT),
+    );
 
     let client = reqwest::Client::builder()
         .default_headers(headers)
@@ -72,16 +75,12 @@ fn pass_check(data_search: &api::PassArg) {
     let mut hashed_password = api::hash_password(&data_search.password);
     let mut uri_acc = api::arg_to_api_route(&api::CheckableChoices::PASS, &hashed_password);
     set_checkpwn_panic!(api::errors::NETWORK_ERROR);
-    let mut pass_stat = client
-        .get(&uri_acc)
-        .send()
-        .unwrap();
+    let mut pass_stat = client.get(&uri_acc).send().unwrap();
 
     set_checkpwn_panic!(api::errors::DECODING_ERROR);
     let pass_body: String = pass_stat.text().unwrap();
-    let breach_bool = api::search_in_range(&pass_body, &hashed_password);
 
-    if breach_bool {
+    if api::search_in_range(&pass_body, &hashed_password) {
         api::breach_report(pass_stat.status(), "", true);
     } else {
         api::breach_report(StatusCode::NOT_FOUND, "", true);

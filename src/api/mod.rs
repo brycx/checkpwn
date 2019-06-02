@@ -113,13 +113,14 @@ pub fn search_in_range(password_range_response: &str, hashed_key: &str) -> bool 
     for line in password_range_response.lines() {
         // Each response is truncated to only be the hash, no whitespaces, etc.
         // All hashes here have a length of 35, so the useless gets dropped by
-        // slicing. Don't include first five characters of own password, as 
+        // slicing. Don't include first five characters of own password, as
         // this also is how the HIBP API returns passwords.
         if line[..35] == hashed_key[5..] {
             return true;
         }
     }
-    return false;   
+
+    false
 }
 
 /// Make a breach report based on StatusCode and print result to temrinal.
@@ -185,9 +186,12 @@ fn evaluate_acc_breach(
 }
 
 /// HIBP breach request used for `acc` arguments.
-pub fn acc_breach_request(searchterm: &str) -> () {
+pub fn acc_breach_request(searchterm: &str) {
     let mut headers = header::HeaderMap::new();
-    headers.insert(header::USER_AGENT, header::HeaderValue::from_static(CHECKPWN_USER_AGENT));
+    headers.insert(
+        header::USER_AGENT,
+        header::HeaderValue::from_static(CHECKPWN_USER_AGENT),
+    );
 
     let client = reqwest::Client::builder()
         .default_headers(headers)
@@ -279,8 +283,11 @@ fn test_evaluate_breach_good() {
 #[test]
 #[should_panic]
 fn test_evaluate_breach_panic() {
-    let _badrequest_badrequest =
-        evaluate_acc_breach(StatusCode::BAD_REQUEST, StatusCode::BAD_REQUEST, "search_key");
+    let _badrequest_badrequest = evaluate_acc_breach(
+        StatusCode::BAD_REQUEST,
+        StatusCode::BAD_REQUEST,
+        "search_key",
+    );
 }
 
 #[test]
@@ -385,12 +392,6 @@ fn test_search_succes_and_failure() {
 
     let hashed_password = hash_password("qwerty");
 
-    assert_eq!(
-        search_in_range(&contains_pass, &hashed_password),
-        true
-    );
-    assert_eq!(
-        search_in_range(&no_pass, &hashed_password),
-        false
-    );
+    assert_eq!(search_in_range(&contains_pass, &hashed_password), true);
+    assert_eq!(search_in_range(&no_pass, &hashed_password), false);
 }
