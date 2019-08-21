@@ -1,6 +1,6 @@
 [package]
 name = "checkpwn"
-version = "0.3.1"
+version = "0.3.2"
 authors = ["brycx <brycx@protonmail.com>"]
 description = "Check Have I Been Pwned and see if it's time for you to change passwords."
 keywords = [ "cli", "password", "security", "HIBP" ]
@@ -13,9 +13,9 @@ license = "MIT"
 colored = "1.8"
 sha-1 = { version = "0.8.1", default-features = false }
 hex = "0.3.2"
-reqwest = "0.9.17"
-rpassword = "3.0.2"
-zeroize = "0.9.1"
+reqwest = "0.9.20"
+rpassword = "4.0.1"
+zeroize = "0.10.0"
 
 [dev-dependencies]
 assert_cmd = "0.11.1"
