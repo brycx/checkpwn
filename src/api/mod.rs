@@ -30,7 +30,6 @@ pub mod errors;
 
 use self::colored::Colorize;
 use self::sha1::{Digest, Sha1};
-use reqwest::header;
 use reqwest::StatusCode;
 use zeroize::Zeroize;
 
@@ -136,64 +135,14 @@ pub fn breach_report(status_code: StatusCode, searchterm: &str, is_password: boo
     }
 }
 
-/// Return a breach report based on two StatusCodes, both need to be false to be a non-breach.
-fn evaluate_acc_breach(
-    acc_stat: StatusCode,
-    paste_stat: StatusCode,
-    search_key: &str,
-) -> ((), bool) {
-    match (acc_stat, paste_stat) {
-        (StatusCode::NOT_FOUND, StatusCode::NOT_FOUND) => {
-            breach_report(StatusCode::NOT_FOUND, &search_key, false)
-        }
-        // BadRequest allowed here because the account API lets you search for usernames
-        // and the paste API will reutrn BadRequest on those
-        (StatusCode::NOT_FOUND, StatusCode::BAD_REQUEST) => {
-            breach_report(StatusCode::NOT_FOUND, &search_key, false)
-        }
-        (StatusCode::BAD_REQUEST, StatusCode::BAD_REQUEST) => {
-            set_checkpwn_panic!(errors::BAD_RESPONSE_ERROR);
-            panic!();
-        }
-        // Since the account API both takes username and emails and situation where BadRequest
-        // and NotFound are returned should never occur.
-        (StatusCode::BAD_REQUEST, StatusCode::NOT_FOUND) => {
-            set_checkpwn_panic!(errors::BAD_RESPONSE_ERROR);
-            panic!();
-        }
-        (StatusCode::BAD_REQUEST, StatusCode::OK) => {
-            set_checkpwn_panic!(errors::BAD_RESPONSE_ERROR);
-            panic!();
-        }
-        _ => breach_report(StatusCode::OK, &search_key, false),
-    }
-}
-
 /// HIBP breach request used for `acc` arguments.
 pub fn acc_breach_request(searchterm: &str) {
-    let mut headers = header::HeaderMap::new();
-    headers.insert(
-        header::USER_AGENT,
-        header::HeaderValue::from_static(CHECKPWN_USER_AGENT),
+    // See https://github.com/brycx/checkpwn/issues/13
+    println!(
+        "Breach status for {}: {}",
+        searchterm.cyan(),
+        "COULD NOT CHECK FOR BREACHES".yellow()
     );
-
-    let client = reqwest::Client::builder()
-        .default_headers(headers)
-        .build()
-        .unwrap();
-
-    set_checkpwn_panic!(errors::NETWORK_ERROR);
-
-    let acc_stat = client
-        .get(&arg_to_api_route(&CheckableChoices::ACC, searchterm))
-        .send()
-        .unwrap();
-    let paste_stat = client
-        .get(&arg_to_api_route(&CheckableChoices::PASTE, searchterm))
-        .send()
-        .unwrap();
-
-    evaluate_acc_breach(acc_stat.status(), paste_stat.status(), searchterm);
 }
 
 /// Read file into buffer.
@@ -240,49 +189,6 @@ fn test_sha1() {
         hash,
         "b1b3773a05c0ed0176787a4f1574ff0075f7521e".to_uppercase()
     );
-}
-
-#[test]
-fn test_evaluate_breach_good() {
-    let (_, ok_ok) = evaluate_acc_breach(StatusCode::OK, StatusCode::OK, "search_key");
-    let (_, ok_notfound) = evaluate_acc_breach(StatusCode::OK, StatusCode::NOT_FOUND, "search_key");
-    let (_, notfound_ok) = evaluate_acc_breach(StatusCode::NOT_FOUND, StatusCode::OK, "search_key");
-    let (_, ok_badrequest) =
-        evaluate_acc_breach(StatusCode::OK, StatusCode::BAD_REQUEST, "search_key");
-    let (_, notfound_badrequest) =
-        evaluate_acc_breach(StatusCode::NOT_FOUND, StatusCode::BAD_REQUEST, "search_key");
-    let (_, notfound_notfound) =
-        evaluate_acc_breach(StatusCode::NOT_FOUND, StatusCode::NOT_FOUND, "search_key");
-
-    assert_eq!(ok_ok, true);
-    assert_eq!(ok_notfound, true);
-    assert_eq!(notfound_ok, true);
-    assert_eq!(ok_badrequest, true);
-    assert_eq!(notfound_badrequest, false);
-    assert_eq!(notfound_notfound, false);
-}
-
-#[test]
-#[should_panic]
-fn test_evaluate_breach_panic() {
-    let _badrequest_badrequest = evaluate_acc_breach(
-        StatusCode::BAD_REQUEST,
-        StatusCode::BAD_REQUEST,
-        "search_key",
-    );
-}
-
-#[test]
-#[should_panic]
-fn test_evaluate_breach_panic_2() {
-    let _badrequest_notfound =
-        evaluate_acc_breach(StatusCode::BAD_REQUEST, StatusCode::NOT_FOUND, "search_key");
-}
-
-#[test]
-#[should_panic]
-fn test_evaluate_breach_panic_3() {
-    let _badrequest_ok = evaluate_acc_breach(StatusCode::BAD_REQUEST, StatusCode::OK, "search_key");
 }
 
 #[test]

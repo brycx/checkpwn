@@ -128,11 +128,7 @@ fn test_cli_acc_breach() {
         .args(&["run", "acc", "test@example.com"])
         .unwrap();
 
-    assert!(String::from_utf8_lossy(&res.stdout).contains("BREACH FOUND"));
-    assert_eq!(
-        String::from_utf8_lossy(&res.stdout).contains("NO BREACH FOUND"),
-        false
-    );
+    assert!(String::from_utf8_lossy(&res.stdout).contains("COULD NOT CHECK FOR BREACHES"));
 }
 
 #[test]
@@ -141,7 +137,7 @@ fn test_cli_acc_no_breach() {
         .args(&["run", "acc", "fsrEos7s@wZ3zdGxr.com"])
         .unwrap();
 
-    assert!(String::from_utf8_lossy(&res.stdout).contains("NO BREACH FOUND"));
+    assert!(String::from_utf8_lossy(&res.stdout).contains("COULD NOT CHECK FOR BREACHES"));
 }
 
 #[test]
