@@ -30,6 +30,7 @@ pub mod api;
 
 #[cfg(test)]
 use assert_cmd::prelude::*;
+use reqwest::blocking::Client;
 use reqwest::header;
 use reqwest::StatusCode;
 use std::io::BufRead;
@@ -67,22 +68,20 @@ fn pass_check(data_search: &api::PassArg) {
         header::HeaderValue::from_static(api::CHECKPWN_USER_AGENT),
     );
 
-    let client = reqwest::Client::builder()
-        .default_headers(headers)
-        .build()
-        .unwrap();
+    let client = Client::builder().default_headers(headers).build().unwrap();
 
     let mut hashed_password = api::hash_password(&data_search.password);
     let uri_acc = api::arg_to_api_route(&api::CheckableChoices::PASS, &hashed_password);
 
     set_checkpwn_panic!(api::errors::NETWORK_ERROR);
-    let mut pass_stat = client.get(&uri_acc).send().unwrap();
+    let pass_stat = client.get(&uri_acc).send().unwrap();
 
     set_checkpwn_panic!(api::errors::DECODING_ERROR);
+    let request_status = pass_stat.status();
     let pass_body: String = pass_stat.text().unwrap();
 
     if api::search_in_range(&pass_body, &hashed_password) {
-        api::breach_report(pass_stat.status(), "", true);
+        api::breach_report(request_status, "", true);
     } else {
         api::breach_report(StatusCode::NOT_FOUND, "", true);
     }
