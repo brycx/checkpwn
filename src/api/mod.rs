@@ -78,7 +78,7 @@ fn format_req(api_route: &CheckableChoices, search_term: &str) -> String {
     request
 }
 
-/// Take the user-supplied command-line arugments and make a URL for the HIBP API.
+/// Take the user-supplied command-line arguments and make a URL for the HIBP API.
 /// If the `pass` argument has been selected, `input_data` needs to be the hashed password.
 pub fn arg_to_api_route(arg: &CheckableChoices, input_data: &str) -> String {
     match arg {
@@ -91,14 +91,21 @@ pub fn arg_to_api_route(arg: &CheckableChoices, input_data: &str) -> String {
     }
 }
 
-/// Find matching key in recevied set of keys.
+/// Find matching key in received set of keys.
 pub fn search_in_range(password_range_response: &str, hashed_key: &str) -> bool {
     for line in password_range_response.lines() {
-        // Each response is truncated to only be the hash, no whitespaces, etc.
+        let pair: Vec<_> = line.split(':').collect();
+        // Padded entries always have an occurrence of 0 and should be
+        // discarded.
+        if *pair.get(1).unwrap() == "0" {
+            continue;
+        }
+
+        // Each response is truncated to only be the hash, no whitespace, etc.
         // All hashes here have a length of 35, so the useless gets dropped by
         // slicing. Don't include first five characters of own password, as
         // this also is how the HIBP API returns passwords.
-        if line[..35] == hashed_key[5..] {
+        if *pair.get(0).unwrap() == &hashed_key[5..] {
             return true;
         }
     }
@@ -106,7 +113,7 @@ pub fn search_in_range(password_range_response: &str, hashed_key: &str) -> bool 
     false
 }
 
-/// Make a breach report based on StatusCode and print result to temrinal.
+/// Make a breach report based on StatusCode and print result to terminal.
 pub fn breach_report(status_code: StatusCode, searchterm: &str, is_password: bool) -> ((), bool) {
     // Do not display password in terminal
     let request_key = if is_password { "********" } else { searchterm };
@@ -221,7 +228,7 @@ fn test_breach_invalid_status() {
 }
 
 #[test]
-fn test_search_succes_and_failure() {
+fn test_search_success_and_failure() {
     // https://api.pwnedpasswords.com/range/B1B37
 
     let contains_pass = String::from(

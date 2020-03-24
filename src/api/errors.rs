@@ -23,7 +23,7 @@
 /// All the different errors for checkpwn;
 /// Errors that are meant to be internal or or unreachable print this.
 pub const USAGE_ERROR: &str = "Usage: checkpwn (acc/pass) (username/email/account_list.ls)";
-pub const STATUSCODE_ERROR: &str = "Unrecognized status code recevied";
+pub const STATUSCODE_ERROR: &str = "Unrecognized status code received";
 pub const PASSWORD_ERROR: &str = "Error retrieving password from stdin";
 pub const READ_FILE_ERROR: &str = "Error reading local file";
 pub const NETWORK_ERROR: &str = "Failed to send request to HIBP";
@@ -31,7 +31,7 @@ pub const DECODING_ERROR: &str = "Failed to decode response from HIBP";
 pub const API_ARG_ERROR: &str =
     "SHOULD_BE_UNREACHABLE: Invalid argument in API route construction detected";
 pub const BAD_RESPONSE_ERROR: &str =
-    "Recevied a bad response from HIBP - make sure the account is valid";
+    "Received a bad response from HIBP - make sure the account is valid";
 pub const BUFREADER_ERROR: &str = "Failed to read file in to BufReader";
 pub const READLINE_ERROR: &str = "Failed to read line from file";
 
