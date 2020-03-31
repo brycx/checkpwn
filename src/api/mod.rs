@@ -33,6 +33,7 @@ use self::sha1::{Digest, Sha1};
 use reqwest::StatusCode;
 use zeroize::Zeroize;
 
+use std::env;
 use std::fs::File;
 use std::io::{BufReader, Error};
 use std::panic;
@@ -106,7 +107,7 @@ pub fn search_in_range(password_range_response: &str, hashed_key: &str) -> bool 
     false
 }
 
-/// Make a breach report based on StatusCode and print result to temrinal.
+/// Make a breach report based on StatusCode and print result to terminal.
 pub fn breach_report(status_code: StatusCode, searchterm: &str, is_password: bool) -> ((), bool) {
     // Do not display password in terminal
     let request_key = if is_password { "********" } else { searchterm };
