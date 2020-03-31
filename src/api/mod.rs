@@ -70,11 +70,6 @@ fn format_req(api_route: &CheckableChoices, search_term: &str) -> String {
     let mut request = String::from(api_route.get_api_route());
     request.push_str(search_term);
 
-    if let CheckableChoices::ACC = api_route {
-        // Include unverified breaches and truncate the response.
-        request.push_str("?includeUnverified=true");
-    }
-
     request
 }
 
