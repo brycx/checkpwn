@@ -34,6 +34,7 @@ pub const BAD_RESPONSE_ERROR: &str =
     "Received a bad response from HIBP - make sure the account is valid";
 pub const BUFREADER_ERROR: &str = "Failed to read file in to BufReader";
 pub const READLINE_ERROR: &str = "Failed to read line from file";
+pub const INVALID_API_KEY: &str = "HIBP deemed the current API key invalid";
 
 /// Set panic hook, to have .unwrap(), etc, return the custom panic message.
 macro_rules! set_checkpwn_panic {

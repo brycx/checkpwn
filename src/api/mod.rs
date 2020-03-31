@@ -143,6 +143,10 @@ fn evaluate_acc_breach(
     search_key: &str,
 ) -> ((), bool) {
     match (acc_stat, paste_stat) {
+        (StatusCode::UNAUTHORIZED, StatusCode::UNAUTHORIZED) => {
+            set_checkpwn_panic!(errors::INVALID_API_KEY);
+            panic!();
+        }
         (StatusCode::NOT_FOUND, StatusCode::NOT_FOUND) => {
             breach_report(StatusCode::NOT_FOUND, &search_key, false)
         }
