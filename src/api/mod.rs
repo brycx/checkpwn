@@ -46,11 +46,19 @@ pub enum CheckableChoices {
 }
 
 impl CheckableChoices {
-    fn get_api_route(&self) -> &'static str {
+    fn get_api_route(&self, search_term: &str) -> String {
         match self {
-            CheckableChoices::ACC => "https://haveibeenpwned.com/api/v3/breachedaccount/",
-            CheckableChoices::PASS => "https://api.pwnedpasswords.com/range/",
-            CheckableChoices::PASTE => "https://haveibeenpwned.com/api/v3/pasteaccount/",
+            CheckableChoices::ACC => format!(
+                "https://haveibeenpwned.com/api/v3/breachedaccount/{}",
+                search_term
+            ),
+            CheckableChoices::PASS => {
+                format!("https://api.pwnedpasswords.com/range/{}", search_term)
+            }
+            CheckableChoices::PASTE => format!(
+                "https://haveibeenpwned.com/api/v3/pasteaccount/{}",
+                search_term
+            ),
         }
     }
 }
@@ -65,24 +73,15 @@ impl Drop for PassArg {
     }
 }
 
-/// Format an API request to fit multiple parameters.
-fn format_req(api_route: &CheckableChoices, search_term: &str) -> String {
-    let mut request = String::from(api_route.get_api_route());
-    request.push_str(search_term);
-
-    request
-}
-
 /// Take the user-supplied command-line arguments and make a URL for the HIBP API.
 /// If the `pass` argument has been selected, `input_data` needs to be the hashed password.
 pub fn arg_to_api_route(arg: &CheckableChoices, input_data: &str) -> String {
     match arg {
-        CheckableChoices::PASS => format_req(
-            arg,
+        CheckableChoices::PASS => arg.get_api_route(
             // Only send the first 5 chars to the password range API
             &input_data[..5],
         ),
-        _ => format_req(arg, input_data),
+        _ => arg.get_api_route(input_data),
     }
 }
 
@@ -195,9 +194,12 @@ fn test_sha1() {
 
 #[test]
 fn test_make_req_and_arg_to_route() {
-    // API paths taken from https://haveibeenpwned.com/API/v2
-    let path = format_req(&CheckableChoices::ACC, "test@example.com");
-    assert_eq!(path, "https://haveibeenpwned.com/api/v3/breachedaccount/test@example.com?includeUnverified=true&truncateResponse=true");
+    // API paths taken from https://haveibeenpwned.com/API/v3
+    let path = CheckableChoices::ACC.get_api_route("test@example.com");
+    assert_eq!(
+        path,
+        "https://haveibeenpwned.com/api/v3/breachedaccount/test@example.com"
+    );
     assert_eq!(
         "https://api.pwnedpasswords.com/range/B1B37",
         arg_to_api_route(&CheckableChoices::PASS, &hash_password("qwerty"))
