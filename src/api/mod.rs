@@ -48,9 +48,9 @@ pub enum CheckableChoices {
 impl CheckableChoices {
     fn get_api_route(&self) -> &'static str {
         match self {
-            CheckableChoices::ACC => "https://haveibeenpwned.com/api/v2/breachedaccount/",
+            CheckableChoices::ACC => "https://haveibeenpwned.com/api/v3/breachedaccount/",
             CheckableChoices::PASS => "https://api.pwnedpasswords.com/range/",
-            CheckableChoices::PASTE => "https://haveibeenpwned.com/api/v2/pasteaccount/",
+            CheckableChoices::PASTE => "https://haveibeenpwned.com/api/v3/pasteaccount/",
         }
     }
 }
@@ -202,13 +202,13 @@ fn test_sha1() {
 fn test_make_req_and_arg_to_route() {
     // API paths taken from https://haveibeenpwned.com/API/v2
     let path = format_req(&CheckableChoices::ACC, "test@example.com");
-    assert_eq!(path, "https://haveibeenpwned.com/api/v2/breachedaccount/test@example.com?includeUnverified=true&truncateResponse=true");
+    assert_eq!(path, "https://haveibeenpwned.com/api/v3/breachedaccount/test@example.com?includeUnverified=true&truncateResponse=true");
     assert_eq!(
         "https://api.pwnedpasswords.com/range/B1B37",
         arg_to_api_route(&CheckableChoices::PASS, &hash_password("qwerty"))
     );
     assert_eq!(
-        "https://haveibeenpwned.com/api/v2/pasteaccount/test@example.com",
+        "https://haveibeenpwned.com/api/v3/pasteaccount/test@example.com",
         arg_to_api_route(&CheckableChoices::PASTE, "test@example.com")
     );
 }
