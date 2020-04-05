@@ -27,6 +27,8 @@ extern crate assert_cmd;
 extern crate reqwest;
 extern crate rpassword;
 extern crate zeroize;
+extern crate serde;
+
 #[macro_use]
 pub mod api;
 
@@ -114,11 +116,13 @@ fn main() {
             pass_check(&password);
         }
         "register" => {
-            let configuration = config::Config::new();
+            assert!(argvs.len() == 3);
+            let configuration = config::Config::new(String::from(&argvs[2]));
             match configuration.get_or_build_path() {
                 Ok(path) => println!("Configuration paths found or created successfully: {:?}", path),
                 Err(e) => panic!(format!("Encountered error! Details: {:?}", e))
             }
+            configuration.save_config().unwrap();
         }
         _ => panic!(),
     };
