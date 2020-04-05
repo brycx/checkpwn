@@ -33,7 +33,6 @@ use self::sha1::{Digest, Sha1};
 use reqwest::StatusCode;
 use zeroize::Zeroize;
 
-use std::env;
 use std::fs::File;
 use std::io::{BufReader, Error};
 use std::panic;

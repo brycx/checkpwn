@@ -20,6 +20,8 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+mod config;
+
 #[cfg(test)]
 extern crate assert_cmd;
 extern crate reqwest;
@@ -110,6 +112,13 @@ fn main() {
                 password: rpassword::prompt_password_stdout("Password: ").unwrap(),
             };
             pass_check(&password);
+        }
+        "register" => {
+            let configuration = config::Config::new();
+            match configuration.get_or_build_path() {
+                Ok(path) => println!("Configuration paths found or created successfully: {:?}", path),
+                Err(e) => panic!(format!("Encountered error! Details: {:?}", e))
+            }
         }
         _ => panic!(),
     };
