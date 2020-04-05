@@ -36,7 +36,7 @@ impl Config {
 
                 if !app_config_dir.exists() {
                     match fs::create_dir_all(&app_config_dir) {
-                        Ok(path) => println!("Successfully created checkpwn configuration directories at {:?}", path),
+                        Ok(()) => println!("Successfully created checkpwn configuration directories at {:?}", &app_config_dir),
                         Err(e) => {
                             panic!("Error creating checkpwn configuration directories: {:?}", e)
                         }

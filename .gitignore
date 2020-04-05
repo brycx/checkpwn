@@ -10,3 +10,6 @@ Cargo.lock
 **/*.rs.bk
 
 list.ls
+
+# Good ol' Mac.
+.DS_Store
