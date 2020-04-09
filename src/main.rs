@@ -40,7 +40,15 @@ use std::process::Command;
 use std::{env, thread, time};
 use zeroize::Zeroize;
 
+fn __get_test_api_key(path_to_api_key: &str) -> String {
+    // Return API key
+
+    String::new()
+}
+
 fn acc_check(data_search: &str) {
+    let api_key = __get_test_api_key("");
+
     // Check if user wants to check a local list
     if data_search.ends_with(".ls") {
         set_checkpwn_panic!(api::errors::BUFREADER_ERROR);
@@ -52,12 +60,12 @@ fn acc_check(data_search: &str) {
             if line.is_empty() {
                 continue;
             }
-            api::acc_breach_request(&line);
+            api::acc_breach_request(&line, &api_key);
             // Only one request every 1500 milliseconds from any given IP
             thread::sleep(time::Duration::from_millis(1600));
         }
     } else {
-        api::acc_breach_request(data_search);
+        api::acc_breach_request(data_search, &api_key);
     }
 }
 

@@ -30,7 +30,7 @@ pub mod errors;
 
 use self::colored::Colorize;
 use self::sha1::{Digest, Sha1};
-use reqwest::StatusCode;
+use reqwest::{header, StatusCode};
 use zeroize::Zeroize;
 
 use std::fs::File;
@@ -174,15 +174,18 @@ fn evaluate_acc_breach(
 }
 
 /// HIBP breach request used for `acc` arguments.
-pub fn acc_breach_request(searchterm: &str) {
+pub fn acc_breach_request(searchterm: &str, api_key: &str) {
     let mut headers = header::HeaderMap::new();
     headers.insert(
         header::USER_AGENT,
         header::HeaderValue::from_static(CHECKPWN_USER_AGENT),
     );
-    // TODO: Get user API key here
+    headers.insert(
+        "hibp-api-key",
+        header::HeaderValue::from_str(api_key).unwrap(),
+    );
 
-    let client = reqwest::Client::builder()
+    let client = reqwest::blocking::Client::builder()
         .default_headers(headers)
         .build()
         .unwrap();
