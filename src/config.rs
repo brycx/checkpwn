@@ -1,22 +1,21 @@
-extern crate serde;
 extern crate dirs;
+extern crate serde;
 extern crate serde_yaml;
 
+use self::dirs::config_dir;
+use self::serde::{Deserialize, Serialize};
 use std::{
-    fs,
-    io,
-    io::{Write},
-    path::{Path, PathBuf}
+    fs, io,
+    io::Write,
+    path::{PathBuf},
 };
-use self::serde::{Serialize, Deserialize};
-use self::dirs::{config_dir};
 
 const CHECKPWN_CONFIG_FILE_NAME: &str = "checkpwn.yml";
 const CHECKPWN_CONFIG_DIR: &str = "checkpwn";
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Config {
-    pub api_key: String
+    pub api_key: String,
 }
 
 #[derive(Debug)]
@@ -27,34 +26,36 @@ pub struct ConfigPaths {
 impl Config {
     pub fn new() -> Config {
         Config {
-            api_key: "".to_string()
+            api_key: "".to_string(),
         }
     }
-    
+
     fn get_config_path(&self) -> Option<ConfigPaths> {
         match config_dir() {
             Some(mut dir) => {
                 dir.push(CHECKPWN_CONFIG_DIR);
                 dir.push(CHECKPWN_CONFIG_FILE_NAME);
-                Some(
-                    ConfigPaths {
-                        config_file_path: dir.to_path_buf()
-                    }
-                )
+                Some(ConfigPaths {
+                    config_file_path: dir.to_path_buf(),
+                })
             }
-            None => None
+            None => None,
         }
     }
 
     fn build_path(&self) -> Result<(), io::Error> {
-        let mut path = self.get_config_path().expect("Failed to determine configuration file path.");
+        let mut path = self
+            .get_config_path()
+            .expect("Failed to determine configuration file path.");
         path.config_file_path.pop(); //remove the filename so we don't accidentally create it as a directory
         fs::create_dir_all(&path.config_file_path).unwrap();
         Ok(())
     }
 
     pub fn load_config(&mut self) {
-        let path = self.get_config_path().expect("Failed to determine configuration file path.");
+        let path = self
+            .get_config_path()
+            .expect("Failed to determine configuration file path.");
         let config_string = fs::read_to_string(&path.config_file_path).unwrap();
         let config_yml: Config = serde_yaml::from_str(&config_string).unwrap();
 
@@ -62,18 +63,19 @@ impl Config {
     }
 
     pub fn save_config(&self, api_key: &String) -> Result<(), io::Error> {
-        let path: ConfigPaths = self.get_config_path().expect("Failed to determine configuration file path.");
+        let path: ConfigPaths = self
+            .get_config_path()
+            .expect("Failed to determine configuration file path.");
 
-        if !path.config_file_path.exists() {
-            self.build_path().unwrap();
-            let new_config = serde_yaml::to_vec(&api_key).unwrap();
-            let mut config_file = fs::File::create(&path.config_file_path).unwrap();
-            config_file.write_all(&new_config).unwrap();
-        } else {
-            print!("Configuration already exists.");
-            // The configuration file already exists
-            // Ask user if we want to overwrite it...
-        }
+        self.build_path().unwrap();
+        let new_config = Config {
+            api_key: api_key.to_string(),
+        };
+
+        let config_to_write = serde_yaml::to_vec(&new_config).unwrap();
+        let mut config_file = fs::File::create(&path.config_file_path).unwrap();
+        config_file.write_all(&config_to_write).unwrap();
+
         Ok(())
     }
 }

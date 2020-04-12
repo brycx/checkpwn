@@ -36,7 +36,7 @@ use assert_cmd::prelude::*;
 use reqwest::blocking::Client;
 use reqwest::header;
 use reqwest::StatusCode;
-use std::io::BufRead;
+use std::io::{BufRead};
 use std::panic;
 #[cfg(test)]
 use std::process::Command;
@@ -95,9 +95,9 @@ fn pass_check(data_search: &api::PassArg) {
 
 fn main() {
     // Set custom usage panic message
-    //set_checkpwn_panic!(api::errors::USAGE_ERROR);
-    // assert!(env::args().len() >= 1);
-    // assert!(env::args().len() < 4);
+    set_checkpwn_panic!(api::errors::USAGE_ERROR);
+    assert!(env::args().len() >= 2);
+    assert!(env::args().len() < 4);
 
     let mut argvs: Vec<String> = env::args().collect();
 
@@ -114,18 +114,15 @@ fn main() {
             };
             pass_check(&password);
         }
-        "config" => {
-            let mut configuration = config::Config::new();
-            configuration.load_config();
-
-            println!("{:?}", configuration);
-        }
         "register" => {
             assert!(argvs.len() == 3);
             let configuration = config::Config::new();
-            configuration.save_config(&argvs[2]).unwrap();
+            match configuration.save_config(&argvs[2]) {
+                Ok(()) => println!("Successfully saved client configuration."),
+                Err(e) => panic!("Encounter error saving client configuration: {}", e)
+            }
         }
-        _ => panic!(),
+        _ => panic!()
     };
     // Zero out the collected arguments, in case the user accidentally inputs sensitive info
     for argument in argvs.iter_mut() {
