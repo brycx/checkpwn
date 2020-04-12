@@ -36,7 +36,7 @@ use assert_cmd::prelude::*;
 use reqwest::blocking::Client;
 use reqwest::header;
 use reqwest::StatusCode;
-use std::io::{BufRead};
+use std::io::{stdin, BufRead};
 use std::panic;
 #[cfg(test)]
 use std::process::Command;
@@ -117,12 +117,35 @@ fn main() {
         "register" => {
             assert!(argvs.len() == 3);
             let configuration = config::Config::new();
-            match configuration.save_config(&argvs[2]) {
-                Ok(()) => println!("Successfully saved client configuration."),
-                Err(e) => panic!("Encounter error saving client configuration: {}", e)
+            let config_path = configuration
+                .get_config_path()
+                .expect("Failed to determine configuration file path.");
+
+            if !config_path.config_file_path.exists() {
+                match configuration.save_config(&argvs[2]) {
+                    Ok(()) => println!("Successfully saved client configuration."),
+                    Err(e) => panic!("Encounter error saving client configuration: {}", e),
+                }
+            } else {
+                println!(
+                    "A configuration file already exists. Do you want to overwrite it? [y/n]: "
+                );
+                let mut overwrite_choice = String::new();
+
+                stdin().read_line(&mut overwrite_choice).unwrap();
+                overwrite_choice.to_lowercase();
+
+                match overwrite_choice.trim() {
+                    "y" => match configuration.save_config(&argvs[2]) {
+                        Ok(()) => println!("Successfully saved new client configuration."),
+                        Err(e) => panic!("Encounter error saving client configuration: {}", e),
+                    },
+                    "n" => println!("Configuration unchanged. Exiting client."),
+                    _ => panic!("Invalid choice. Please enter 'y' for 'yes' or 'n' for 'no'."),
+                }
             }
         }
-        _ => panic!()
+        _ => panic!(),
     };
     // Zero out the collected arguments, in case the user accidentally inputs sensitive info
     for argument in argvs.iter_mut() {
