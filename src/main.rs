@@ -19,15 +19,14 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
-
 mod config;
 
 #[cfg(test)]
 extern crate assert_cmd;
 extern crate reqwest;
 extern crate rpassword;
-extern crate zeroize;
 extern crate serde;
+extern crate zeroize;
 
 #[macro_use]
 pub mod api;
@@ -96,9 +95,9 @@ fn pass_check(data_search: &api::PassArg) {
 
 fn main() {
     // Set custom usage panic message
-    set_checkpwn_panic!(api::errors::USAGE_ERROR);
-    assert!(env::args().len() >= 2);
-    assert!(env::args().len() < 4);
+    //set_checkpwn_panic!(api::errors::USAGE_ERROR);
+    // assert!(env::args().len() >= 1);
+    // assert!(env::args().len() < 4);
 
     let mut argvs: Vec<String> = env::args().collect();
 
@@ -115,14 +114,16 @@ fn main() {
             };
             pass_check(&password);
         }
+        "config" => {
+            let mut configuration = config::Config::new();
+            configuration.load_config();
+
+            println!("{:?}", configuration);
+        }
         "register" => {
             assert!(argvs.len() == 3);
-            let configuration = config::Config::new(String::from(&argvs[2]));
-            match configuration.get_or_build_path() {
-                Ok(path) => println!("Configuration paths found or created successfully: {:?}", path),
-                Err(e) => panic!(format!("Encountered error! Details: {:?}", e))
-            }
-            configuration.save_config().unwrap();
+            let configuration = config::Config::new();
+            configuration.save_config(&argvs[2]).unwrap();
         }
         _ => panic!(),
     };

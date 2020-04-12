@@ -1,18 +1,16 @@
 extern crate serde;
 extern crate dirs;
+extern crate serde_yaml;
 
 use std::{
     fs,
-    io::{Write},
     io,
+    io::{Write},
     path::{Path, PathBuf}
 };
 use self::serde::{Serialize, Deserialize};
 use self::dirs::{config_dir};
 
-// There might be a better approach here to handling configuration
-// directories across platform. The crate `directories` looks like a nice
-// option, but I noticed it had some `panics!()` within the code base.
 const CHECKPWN_CONFIG_FILE_NAME: &str = "checkpwn.yml";
 const CHECKPWN_CONFIG_DIR: &str = "checkpwn";
 
@@ -27,72 +25,55 @@ pub struct ConfigPaths {
 }
 
 impl Config {
-    pub fn new(api_key: String) -> Config {
+    pub fn new() -> Config {
         Config {
-            api_key
+            api_key: "".to_string()
         }
     }
-
-    pub fn get_or_build_path(&self) -> Result<ConfigPaths, ()> {
-        // referenced from https://github.com/Rigellute/spotify-tui/blob/master/src/config.rs
-        // I found it difficult to use the `directories` crate -- particularly converting the
-        // `ProjectDirs` type to a `Path` type or a string
+    
+    fn get_config_path(&self) -> Option<ConfigPaths> {
         match config_dir() {
-            Some(config_dir) => {
-                let path = Path::new(&config_dir);
-                let app_config_dir = path.join(CHECKPWN_CONFIG_DIR);
-
-                if !app_config_dir.exists() {
-                    match fs::create_dir_all(&app_config_dir) {
-                        Ok(()) => println!("Successfully created checkpwn configuration directories at {:?}", &app_config_dir),
-                        Err(e) => {
-                            panic!("Error creating checkpwn configuration directories: {:?}", e)
-                        }
+            Some(mut dir) => {
+                dir.push(CHECKPWN_CONFIG_DIR);
+                dir.push(CHECKPWN_CONFIG_FILE_NAME);
+                Some(
+                    ConfigPaths {
+                        config_file_path: dir.to_path_buf()
                     }
-                }
-                let config_file_path = &app_config_dir.join(CHECKPWN_CONFIG_FILE_NAME);
-
-                let paths = ConfigPaths {
-                    config_file_path: config_file_path.to_path_buf(),
-                };
-
-                Ok(paths)
+                )
             }
-            // is there a better way to handle this failure?
-            None => panic!("Could not find path for configuration file."),
+            None => None
         }
     }
 
-    pub fn save_config(&self) -> Result<ConfigPaths, ()> {
-        let path = match self.get_or_build_path() {
-            Ok(p) => p,
-            Err(e) => {
-                panic!("Error retrieving configuration file path: {:?}", e)
-            }
-        };
-
-        let new_config = serde_yaml::to_vec(&self).unwrap();
-        let mut config_file = fs::File::create(&path.config_file_path).unwrap();
-        config_file.write_all(&new_config).unwrap();
-
-        Ok(path)
+    fn build_path(&self) -> Result<(), io::Error> {
+        let mut path = self.get_config_path().expect("Failed to determine configuration file path.");
+        path.config_file_path.pop(); //remove the filename so we don't accidentally create it as a directory
+        fs::create_dir_all(&path.config_file_path).unwrap();
+        Ok(())
     }
 
-    // pub fn load_config(&mut self){
-    //     let path = match self.get_or_build_path() {
-    //         Ok(p) => p,
-    //         Err(e) => { panic!("Error retrieving configuration path: {:?}", e)}
-    //     };
+    pub fn load_config(&mut self) {
+        let path = self.get_config_path().expect("Failed to determine configuration file path.");
+        let config_string = fs::read_to_string(&path.config_file_path).unwrap();
+        let config_yml: Config = serde_yaml::from_str(&config_string).unwrap();
 
-    //     if path.config_file_path.exists() {
-    //         let full_config_path = match fs::read_to_string(&path.config_file_path) {
-    //             Ok(p) => p,
-    //             Err(e) => { panic!("Error parsing path of configuration file to string: {:?}", e)}
-    //         };
+        self.api_key = config_yml.api_key;
+    }
 
-    //         //TODO: handle the `std::result::Result` returned from `serde_yaml::from_str`
-    //         let config_yml = serde_yaml::from_str(&full_config_path);
-    //     }
+    pub fn save_config(&self, api_key: &String) -> Result<(), io::Error> {
+        let path: ConfigPaths = self.get_config_path().expect("Failed to determine configuration file path.");
 
-    // }
+        if !path.config_file_path.exists() {
+            self.build_path().unwrap();
+            let new_config = serde_yaml::to_vec(&api_key).unwrap();
+            let mut config_file = fs::File::create(&path.config_file_path).unwrap();
+            config_file.write_all(&new_config).unwrap();
+        } else {
+            print!("Configuration already exists.");
+            // The configuration file already exists
+            // Ask user if we want to overwrite it...
+        }
+        Ok(())
+    }
 }
