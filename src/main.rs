@@ -146,7 +146,7 @@ fn main() {
                 match overwrite_choice.trim() {
                     "y" => match configuration.save_config(&argvs[2]) {
                         Ok(()) => println!("Successfully saved new client configuration."),
-                        Err(e) => panic!("Encounter error saving client configuration: {}", e),
+                        Err(e) => panic!("Encountered error saving client configuration: {}", e),
                     },
                     "n" => println!("Configuration unchanged. Exiting client."),
                     _ => panic!("Invalid choice. Please enter 'y' for 'yes' or 'n' for 'no'."),
