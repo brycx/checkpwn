@@ -23,7 +23,7 @@
 /// All the different errors for checkpwn;
 /// Errors that are meant to be internal or or unreachable print this.
 pub const USAGE_ERROR: &str = "Usage: checkpwn { pass | acc (<username> | <email> | <filename>.ls) | register <apikey> }";
-pub const STATUSCODE_ERROR: &str = "Unrecognized status code recevied";
+pub const STATUSCODE_ERROR: &str = "Unrecognized status code received";
 pub const PASSWORD_ERROR: &str = "Error retrieving password from stdin";
 pub const READ_FILE_ERROR: &str = "Error reading local file";
 pub const NETWORK_ERROR: &str = "Failed to send request to HIBP";
