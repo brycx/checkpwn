@@ -132,7 +132,7 @@ fn main() {
             if !config_path.config_file_path.exists() {
                 match configuration.save_config(&argvs[2]) {
                     Ok(()) => println!("Successfully saved client configuration."),
-                    Err(e) => panic!("Encounter error saving client configuration: {}", e),
+                    Err(e) => panic!("Encountered error saving client configuration: {}", e),
                 }
             } else {
                 println!(
