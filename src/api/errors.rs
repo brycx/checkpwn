@@ -31,9 +31,10 @@ pub const DECODING_ERROR: &str = "Failed to decode response from HIBP";
 pub const API_ARG_ERROR: &str =
     "SHOULD_BE_UNREACHABLE: Invalid argument in API route construction detected";
 pub const BAD_RESPONSE_ERROR: &str =
-    "Recevied a bad response from HIBP - make sure the account is valid";
+    "Received a bad response from HIBP - make sure the account is valid";
 pub const BUFREADER_ERROR: &str = "Failed to read file in to BufReader";
 pub const READLINE_ERROR: &str = "Failed to read line from file";
+pub const INVALID_API_KEY: &str = "HIBP deemed the current API key invalid";
 
 /// Set panic hook, to have .unwrap(), etc, return the custom panic message.
 macro_rules! set_checkpwn_panic {
