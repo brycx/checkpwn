@@ -48,6 +48,25 @@ impl Config {
         Ok(())
     }
 
+    #[cfg(test)]
+    pub fn load_config(&mut self) {
+        // If in CI, the key is in env. Local tests use the config file.
+        match std::env::var("API_KEY") {
+            Ok(api_key) => self.api_key = api_key,
+            Err(std::env::VarError::NotPresent) => {
+                let path = self
+                    .get_config_path()
+                    .expect("Failed to determine configuration file path.");
+                let config_string = fs::read_to_string(&path.config_file_path).unwrap();
+                let config_yml: Config = serde_yaml::from_str(&config_string).unwrap();
+
+                self.api_key = config_yml.api_key;
+            }
+            _ => panic!("CI API KEY WAS NOT UTF8"),
+        }
+    }
+
+    #[cfg(not(test))]
     pub fn load_config(&mut self) {
         let path = self
             .get_config_path()
