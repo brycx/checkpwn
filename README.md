@@ -14,6 +14,14 @@ cargo install checkpwn
 cargo install --force checkpwn
 ```
 
+#### Register & update API key:
+```
+checkpwn register 123456789
+```
+
+This command creates a `checkpwn.yml` configuration file in the users configuration directory,
+which saves the API key. This is needed for all calls to the account API (`checkpwn acc`).
+
 #### Check an account, or list of accounts, for breaches:
 ```
 checkpwn acc test@example.com

@@ -19,12 +19,15 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
+mod config;
 
 #[cfg(test)]
 extern crate assert_cmd;
 extern crate reqwest;
 extern crate rpassword;
+extern crate serde;
 extern crate zeroize;
+
 #[macro_use]
 pub mod api;
 
@@ -33,7 +36,7 @@ use assert_cmd::prelude::*;
 use reqwest::blocking::Client;
 use reqwest::header;
 use reqwest::StatusCode;
-use std::io::BufRead;
+use std::io::{stdin, BufRead};
 use std::panic;
 #[cfg(test)]
 use std::process::Command;
@@ -41,6 +44,10 @@ use std::{env, thread, time};
 use zeroize::Zeroize;
 
 fn acc_check(data_search: &str) {
+    set_checkpwn_panic!(api::errors::MISSING_API_KEY);
+    let mut config = config::Config::new();
+    config.load_config();
+
     // Check if user wants to check a local list
     if data_search.ends_with(".ls") {
         set_checkpwn_panic!(api::errors::BUFREADER_ERROR);
@@ -52,12 +59,12 @@ fn acc_check(data_search: &str) {
             if line.is_empty() {
                 continue;
             }
-            api::acc_breach_request(&line);
+            api::acc_breach_request(&line, &config.api_key);
             // Only one request every 1500 milliseconds from any given IP
             thread::sleep(time::Duration::from_millis(1600));
         }
     } else {
-        api::acc_breach_request(data_search);
+        api::acc_breach_request(data_search, &config.api_key);
     }
 }
 
@@ -115,6 +122,37 @@ fn main() {
             };
             pass_check(&password);
         }
+        "register" => {
+            assert!(argvs.len() == 3);
+            let configuration = config::Config::new();
+            let config_path = configuration
+                .get_config_path()
+                .expect("Failed to determine configuration file path.");
+
+            if !config_path.config_file_path.exists() {
+                match configuration.save_config(&argvs[2]) {
+                    Ok(()) => println!("Successfully saved client configuration."),
+                    Err(e) => panic!("Encountered error saving client configuration: {}", e),
+                }
+            } else {
+                println!(
+                    "A configuration file already exists. Do you want to overwrite it? [y/n]: "
+                );
+                let mut overwrite_choice = String::new();
+
+                stdin().read_line(&mut overwrite_choice).unwrap();
+                overwrite_choice.to_lowercase();
+
+                match overwrite_choice.trim() {
+                    "y" => match configuration.save_config(&argvs[2]) {
+                        Ok(()) => println!("Successfully saved new client configuration."),
+                        Err(e) => panic!("Encountered error saving client configuration: {}", e),
+                    },
+                    "n" => println!("Configuration unchanged. Exiting client."),
+                    _ => panic!("Invalid choice. Please enter 'y' for 'yes' or 'n' for 'no'."),
+                }
+            }
+        }
         _ => panic!(),
     };
     // Zero out the collected arguments, in case the user accidentally inputs sensitive info
@@ -131,7 +169,7 @@ fn test_cli_acc_breach() {
         .args(&["run", "acc", "test@example.com"])
         .unwrap();
 
-    assert!(String::from_utf8_lossy(&res.stdout).contains("COULD NOT CHECK FOR BREACHES"));
+    assert!(String::from_utf8_lossy(&res.stdout).contains("BREACH FOUND"));
 }
 
 #[test]
@@ -140,7 +178,7 @@ fn test_cli_acc_no_breach() {
         .args(&["run", "acc", "fsrEos7s@wZ3zdGxr.com"])
         .unwrap();
 
-    assert!(String::from_utf8_lossy(&res.stdout).contains("COULD NOT CHECK FOR BREACHES"));
+    assert!(String::from_utf8_lossy(&res.stdout).contains("NO BREACH FOUND"));
 }
 
 #[test]

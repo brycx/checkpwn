@@ -30,7 +30,7 @@ pub mod errors;
 
 use self::colored::Colorize;
 use self::sha1::{Digest, Sha1};
-use reqwest::StatusCode;
+use reqwest::{header, StatusCode};
 use zeroize::Zeroize;
 
 use std::fs::File;
@@ -46,11 +46,19 @@ pub enum CheckableChoices {
 }
 
 impl CheckableChoices {
-    fn get_api_route(&self) -> &'static str {
+    fn get_api_route(&self, search_term: &str) -> String {
         match self {
-            CheckableChoices::ACC => "https://haveibeenpwned.com/api/v2/breachedaccount/",
-            CheckableChoices::PASS => "https://api.pwnedpasswords.com/range/",
-            CheckableChoices::PASTE => "https://haveibeenpwned.com/api/v2/pasteaccount/",
+            CheckableChoices::ACC => format!(
+                "https://haveibeenpwned.com/api/v3/breachedaccount/{}",
+                search_term
+            ),
+            CheckableChoices::PASS => {
+                format!("https://api.pwnedpasswords.com/range/{}", search_term)
+            }
+            CheckableChoices::PASTE => format!(
+                "https://haveibeenpwned.com/api/v3/pasteaccount/{}",
+                search_term
+            ),
         }
     }
 }
@@ -65,29 +73,15 @@ impl Drop for PassArg {
     }
 }
 
-/// Format an API request to fit multiple parameters.
-fn format_req(api_route: &CheckableChoices, search_term: &str) -> String {
-    let mut request = String::from(api_route.get_api_route());
-    request.push_str(search_term);
-
-    if let CheckableChoices::ACC = api_route {
-        // Include unverified breaches and truncate the response.
-        request.push_str("?includeUnverified=true&truncateResponse=true");
-    }
-
-    request
-}
-
 /// Take the user-supplied command-line arguments and make a URL for the HIBP API.
 /// If the `pass` argument has been selected, `input_data` needs to be the hashed password.
 pub fn arg_to_api_route(arg: &CheckableChoices, input_data: &str) -> String {
     match arg {
-        CheckableChoices::PASS => format_req(
-            arg,
+        CheckableChoices::PASS => arg.get_api_route(
             // Only send the first 5 chars to the password range API
             &input_data[..5],
         ),
-        _ => format_req(arg, input_data),
+        _ => arg.get_api_route(input_data),
     }
 }
 
@@ -142,14 +136,72 @@ pub fn breach_report(status_code: StatusCode, searchterm: &str, is_password: boo
     }
 }
 
+/// Return a breach report based on two StatusCodes, both need to be false to be a non-breach.
+fn evaluate_acc_breach(
+    acc_stat: StatusCode,
+    paste_stat: StatusCode,
+    search_key: &str,
+) -> ((), bool) {
+    match (acc_stat, paste_stat) {
+        (StatusCode::UNAUTHORIZED, StatusCode::UNAUTHORIZED) => {
+            set_checkpwn_panic!(errors::INVALID_API_KEY);
+            panic!();
+        }
+        (StatusCode::NOT_FOUND, StatusCode::NOT_FOUND) => {
+            breach_report(StatusCode::NOT_FOUND, &search_key, false)
+        }
+        // BadRequest allowed here because the account API lets you search for usernames
+        // and the paste API will return BadRequest on those
+        (StatusCode::NOT_FOUND, StatusCode::BAD_REQUEST) => {
+            breach_report(StatusCode::NOT_FOUND, &search_key, false)
+        }
+        (StatusCode::BAD_REQUEST, StatusCode::BAD_REQUEST) => {
+            set_checkpwn_panic!(errors::BAD_RESPONSE_ERROR);
+            panic!();
+        }
+        // Since the account API both takes username and emails and situation where BadRequest
+        // and NotFound are returned should never occur.
+        (StatusCode::BAD_REQUEST, StatusCode::NOT_FOUND) => {
+            set_checkpwn_panic!(errors::BAD_RESPONSE_ERROR);
+            panic!();
+        }
+        (StatusCode::BAD_REQUEST, StatusCode::OK) => {
+            set_checkpwn_panic!(errors::BAD_RESPONSE_ERROR);
+            panic!();
+        }
+        _ => breach_report(StatusCode::OK, &search_key, false),
+    }
+}
+
 /// HIBP breach request used for `acc` arguments.
-pub fn acc_breach_request(searchterm: &str) {
-    // See https://github.com/brycx/checkpwn/issues/13
-    println!(
-        "Breach status for {}: {}",
-        searchterm.cyan(),
-        "COULD NOT CHECK FOR BREACHES".yellow()
+pub fn acc_breach_request(searchterm: &str, api_key: &str) {
+    let mut headers = header::HeaderMap::new();
+    headers.insert(
+        header::USER_AGENT,
+        header::HeaderValue::from_static(CHECKPWN_USER_AGENT),
     );
+    headers.insert(
+        "hibp-api-key",
+        header::HeaderValue::from_str(api_key).unwrap(),
+    );
+
+    let client = reqwest::blocking::Client::builder()
+        .default_headers(headers)
+        .build()
+        .unwrap();
+
+    set_checkpwn_panic!(errors::NETWORK_ERROR);
+
+    let acc_stat = client
+        .get(&arg_to_api_route(&CheckableChoices::ACC, searchterm))
+        .send()
+        .unwrap();
+    let paste_stat = client
+        .get(&arg_to_api_route(&CheckableChoices::PASTE, searchterm))
+        .send()
+        .unwrap();
+
+    evaluate_acc_breach(acc_stat.status(), paste_stat.status(), searchterm);
 }
 
 /// Read file into buffer.
@@ -200,15 +252,18 @@ fn test_sha1() {
 
 #[test]
 fn test_make_req_and_arg_to_route() {
-    // API paths taken from https://haveibeenpwned.com/API/v2
-    let path = format_req(&CheckableChoices::ACC, "test@example.com");
-    assert_eq!(path, "https://haveibeenpwned.com/api/v2/breachedaccount/test@example.com?includeUnverified=true&truncateResponse=true");
+    // API paths taken from https://haveibeenpwned.com/API/v3
+    let path = CheckableChoices::ACC.get_api_route("test@example.com");
+    assert_eq!(
+        path,
+        "https://haveibeenpwned.com/api/v3/breachedaccount/test@example.com"
+    );
     assert_eq!(
         "https://api.pwnedpasswords.com/range/B1B37",
         arg_to_api_route(&CheckableChoices::PASS, &hash_password("qwerty"))
     );
     assert_eq!(
-        "https://haveibeenpwned.com/api/v2/pasteaccount/test@example.com",
+        "https://haveibeenpwned.com/api/v3/pasteaccount/test@example.com",
         arg_to_api_route(&CheckableChoices::PASTE, "test@example.com")
     );
 }
@@ -263,4 +318,47 @@ fn test_search_success_and_failure() {
 
     assert_eq!(search_in_range(&contains_pass, &hashed_password), true);
     assert_eq!(search_in_range(&no_pass, &hashed_password), false);
+}
+
+#[test]
+fn test_evaluate_breach_good() {
+    let (_, ok_ok) = evaluate_acc_breach(StatusCode::OK, StatusCode::OK, "search_key");
+    let (_, ok_notfound) = evaluate_acc_breach(StatusCode::OK, StatusCode::NOT_FOUND, "search_key");
+    let (_, notfound_ok) = evaluate_acc_breach(StatusCode::NOT_FOUND, StatusCode::OK, "search_key");
+    let (_, ok_badrequest) =
+        evaluate_acc_breach(StatusCode::OK, StatusCode::BAD_REQUEST, "search_key");
+    let (_, notfound_badrequest) =
+        evaluate_acc_breach(StatusCode::NOT_FOUND, StatusCode::BAD_REQUEST, "search_key");
+    let (_, notfound_notfound) =
+        evaluate_acc_breach(StatusCode::NOT_FOUND, StatusCode::NOT_FOUND, "search_key");
+
+    assert_eq!(ok_ok, true);
+    assert_eq!(ok_notfound, true);
+    assert_eq!(notfound_ok, true);
+    assert_eq!(ok_badrequest, true);
+    assert_eq!(notfound_badrequest, false);
+    assert_eq!(notfound_notfound, false);
+}
+
+#[test]
+#[should_panic]
+fn test_evaluate_breach_panic() {
+    let _badrequest_badrequest = evaluate_acc_breach(
+        StatusCode::BAD_REQUEST,
+        StatusCode::BAD_REQUEST,
+        "search_key",
+    );
+}
+
+#[test]
+#[should_panic]
+fn test_evaluate_breach_panic_2() {
+    let _badrequest_notfound =
+        evaluate_acc_breach(StatusCode::BAD_REQUEST, StatusCode::NOT_FOUND, "search_key");
+}
+
+#[test]
+#[should_panic]
+fn test_evaluate_breach_panic_3() {
+    let _badrequest_ok = evaluate_acc_breach(StatusCode::BAD_REQUEST, StatusCode::OK, "search_key");
 }
