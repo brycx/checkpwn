@@ -48,7 +48,7 @@ impl Config {
         Ok(())
     }
 
-    #[cfg(test)]
+    #[cfg(debug_assertions)]
     pub fn load_config(&mut self) {
         // If in CI, the key is in env. Local tests use the config file.
         match std::env::var("API_KEY") {
@@ -66,7 +66,7 @@ impl Config {
         }
     }
 
-    #[cfg(not(test))]
+    #[cfg(not(debug_assertions))]
     pub fn load_config(&mut self) {
         let path = self
             .get_config_path()
