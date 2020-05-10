@@ -4,7 +4,7 @@ extern crate serde_yaml;
 
 use self::dirs::config_dir;
 use self::serde::{Deserialize, Serialize};
-use std::{fs, io, io::Write, path::PathBuf};
+use std::{fs, io::Write, path::PathBuf};
 
 const CHECKPWN_CONFIG_FILE_NAME: &str = "checkpwn.yml";
 const CHECKPWN_CONFIG_DIR: &str = "checkpwn";
@@ -39,7 +39,7 @@ impl Config {
         }
     }
 
-    fn build_path(&self) -> Result<(), io::Error> {
+    fn build_path(&self) -> Result<(), Box<dyn std::error::Error>> {
         let mut path = self
             .get_config_path()
             .expect("Failed to determine configuration file path.");
@@ -77,7 +77,7 @@ impl Config {
         self.api_key = config_yml.api_key;
     }
 
-    pub fn save_config(&self, api_key: &String) -> Result<(), io::Error> {
+    pub fn save_config(&self, api_key: &String) -> Result<(), Box<dyn std::error::Error>> {
         let path: ConfigPaths = self
             .get_config_path()
             .expect("Failed to determine configuration file path.");

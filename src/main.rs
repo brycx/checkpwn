@@ -159,7 +159,7 @@ fn main() {
     for argument in argvs.iter_mut() {
         argument.zeroize();
     }
-    // Only one request every 1500 milliseconds from any given IP
+    // Only one request every 1600 milliseconds from any given IP
     thread::sleep(time::Duration::from_millis(1600));
 }
 
