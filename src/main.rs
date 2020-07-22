@@ -46,7 +46,7 @@ use zeroize::Zeroize;
 fn acc_check(data_search: &str) {
     set_checkpwn_panic!(api::errors::MISSING_API_KEY);
     let mut config = config::Config::new();
-    config.load_config();
+    config.load_config().unwrap();
 
     // Check if user wants to check a local list
     if data_search.ends_with(".ls") {
@@ -60,7 +60,7 @@ fn acc_check(data_search: &str) {
                 continue;
             }
             api::acc_breach_request(&line, &config.api_key);
-            // Only one request every 1500 milliseconds from any given IP
+            // HIBP limits requests to one per 1500 milliseconds. We're allowing for 1600 below as a buffer.
             thread::sleep(time::Duration::from_millis(1600));
         }
     } else {
