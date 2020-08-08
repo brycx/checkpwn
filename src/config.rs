@@ -32,7 +32,7 @@ impl Config {
                 dir.push(CHECKPWN_CONFIG_DIR);
                 dir.push(CHECKPWN_CONFIG_FILE_NAME);
                 Some(ConfigPaths {
-                    config_file_path: dir.to_path_buf(),
+                    config_file_path: dir,
                 })
             }
             None => None,
@@ -55,7 +55,7 @@ impl Config {
             Ok(api_key) => {
                 self.api_key = api_key;
                 Ok(())
-            },
+            }
             Err(std::env::VarError::NotPresent) => {
                 let path = self
                     .get_config_path()
@@ -81,7 +81,7 @@ impl Config {
         self.api_key = config_yml.api_key;
     }
 
-    pub fn save_config(&self, api_key: &String) -> Result<(), Box<dyn std::error::Error>> {
+    pub fn save_config(&self, api_key: &str) -> Result<(), Box<dyn std::error::Error>> {
         let path: ConfigPaths = self
             .get_config_path()
             .expect("Failed to determine configuration file path.");

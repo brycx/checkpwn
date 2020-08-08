@@ -215,10 +215,10 @@ pub fn read_file(path: &str) -> Result<BufReader<File>, Error> {
 /// Return SHA1 digest of string.
 pub fn hash_password(password: &str) -> String {
     let mut sha_digest = Sha1::default();
-    sha_digest.input(password.as_bytes());
+    sha_digest.update(password.as_bytes());
     // Make uppercase for easier comparison with
     // HIBP API response
-    hex::encode(sha_digest.result()).to_uppercase()
+    hex::encode(sha_digest.finalize()).to_uppercase()
 }
 
 /// Strip all whitespace and all newlines from a given string.
