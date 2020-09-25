@@ -23,9 +23,9 @@ mod config;
 
 #[cfg(test)]
 extern crate assert_cmd;
-extern crate reqwest;
 extern crate rpassword;
 extern crate serde;
+extern crate ureq;
 extern crate zeroize;
 
 #[macro_use]
@@ -33,9 +33,6 @@ pub mod api;
 
 #[cfg(test)]
 use assert_cmd::prelude::*;
-use reqwest::blocking::Client;
-use reqwest::header;
-use reqwest::StatusCode;
 use std::io::{stdin, BufRead};
 use std::panic;
 #[cfg(test)]
@@ -69,32 +66,24 @@ fn acc_check(data_search: &str) {
 }
 
 fn pass_check(data_search: &api::PassArg) {
-    let mut headers = header::HeaderMap::new();
-    headers.insert(
-        header::USER_AGENT,
-        header::HeaderValue::from_static(api::CHECKPWN_USER_AGENT),
-    );
-    headers.insert(
-        "Add-Padding",
-        header::HeaderValue::from_str("true").unwrap(),
-    );
-
-    let client = Client::builder().default_headers(headers).build().unwrap();
-
     let mut hashed_password = api::hash_password(&data_search.password);
     let uri_acc = api::arg_to_api_route(&api::CheckableChoices::PASS, &hashed_password);
 
     set_checkpwn_panic!(api::errors::NETWORK_ERROR);
-    let pass_stat = client.get(&uri_acc).send().unwrap();
+    let pass_stat = ureq::get(&uri_acc)
+        .set("User-Agent", api::CHECKPWN_USER_AGENT)
+        .set("Add-Padding", "true")
+        .timeout_connect(10_000)
+        .call();
 
     set_checkpwn_panic!(api::errors::DECODING_ERROR);
     let request_status = pass_stat.status();
-    let pass_body: String = pass_stat.text().unwrap();
+    let pass_body: String = pass_stat.into_string().unwrap();
 
     if api::search_in_range(&pass_body, &hashed_password) {
         api::breach_report(request_status, "", true);
     } else {
-        api::breach_report(StatusCode::NOT_FOUND, "", true);
+        api::breach_report(404, "", true);
     }
 
     // Zero out as this contains a weakly hashed password
