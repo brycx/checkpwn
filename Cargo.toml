@@ -13,7 +13,7 @@ license = "MIT"
 colored = "2.0"
 sha-1 = { version = "0.9.1", default-features = false }
 hex = "0.4.2"
-reqwest = { version = "0.10.4", features = ["blocking"] }
+ureq = { version = "1.4.1", default-features = false, features = ["tls"] }
 rpassword = "5.0.0"
 zeroize = "1.1.0"
 dirs = "3.0.1"
