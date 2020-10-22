@@ -24,18 +24,9 @@
 /// Errors that are meant to be internal or or unreachable print this.
 pub const USAGE_ERROR: &str =
     "Usage: checkpwn { pass | acc (<username> | <email> | <filename>.ls) | register <apikey> }";
-pub const STATUSCODE_ERROR: &str = "Unrecognized status code received";
-pub const PASSWORD_ERROR: &str = "Error retrieving password from stdin";
 pub const READ_FILE_ERROR: &str = "Error reading local file";
-pub const NETWORK_ERROR: &str = "Failed to send request to HIBP";
-pub const DECODING_ERROR: &str = "Failed to decode response from HIBP";
-pub const API_ARG_ERROR: &str =
-    "SHOULD_BE_UNREACHABLE: Invalid argument in API route construction detected";
-pub const BAD_RESPONSE_ERROR: &str =
-    "Received a bad response from HIBP - make sure the account is valid";
 pub const BUFREADER_ERROR: &str = "Failed to read file in to BufReader";
 pub const READLINE_ERROR: &str = "Failed to read line from file";
-pub const INVALID_API_KEY: &str = "HIBP deemed the current API key invalid";
 pub const MISSING_API_KEY: &str = "Failed to read or parse the configuration file 'checkpwn.yml'. You need to register an API key to be able to check accounts";
 
 /// Set panic hook, to have .unwrap(), etc, return the custom panic message.
