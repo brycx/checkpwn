@@ -19,80 +19,39 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
+
+#![forbid(unsafe_code)]
+#![deny(clippy::mem_forget)]
+#![warn(
+    rust_2018_idioms,
+    trivial_casts,
+    unused_qualifications,
+    overflowing_literals
+)]
+
 mod config;
-
-#[cfg(test)]
-extern crate assert_cmd;
-extern crate rpassword;
-extern crate serde;
-extern crate ureq;
-extern crate zeroize;
-
 #[macro_use]
-pub mod api;
+mod errors;
+
+use anyhow::Result;
+use checkpwn_lib::Password;
+use colored::Colorize;
+
+use std::fs::File;
+use std::io::{BufReader, Error};
 
 #[cfg(test)]
 use assert_cmd::prelude::*;
+use std::env;
 use std::io::{stdin, BufRead};
 use std::panic;
 #[cfg(test)]
 use std::process::Command;
-use std::{env, thread, time};
 use zeroize::Zeroize;
 
-fn acc_check(data_search: &str) {
-    set_checkpwn_panic!(api::errors::MISSING_API_KEY);
-    let mut config = config::Config::new();
-    config.load_config().unwrap();
-
-    // Check if user wants to check a local list
-    if data_search.ends_with(".ls") {
-        set_checkpwn_panic!(api::errors::BUFREADER_ERROR);
-        let file = api::read_file(data_search).unwrap();
-
-        for line_iter in file.lines() {
-            set_checkpwn_panic!(api::errors::READLINE_ERROR);
-            let line = api::strip(&line_iter.unwrap());
-            if line.is_empty() {
-                continue;
-            }
-            api::acc_breach_request(&line, &config.api_key);
-            // HIBP limits requests to one per 1500 milliseconds. We're allowing for 1600 below as a buffer.
-            thread::sleep(time::Duration::from_millis(1600));
-        }
-    } else {
-        api::acc_breach_request(data_search, &config.api_key);
-    }
-}
-
-fn pass_check(data_search: &api::PassArg) {
-    let mut hashed_password = api::hash_password(&data_search.password);
-    let uri_acc = api::arg_to_api_route(&api::CheckableChoices::PASS, &hashed_password);
-
-    set_checkpwn_panic!(api::errors::NETWORK_ERROR);
-    let pass_stat = ureq::get(&uri_acc)
-        .set("User-Agent", api::CHECKPWN_USER_AGENT)
-        .set("Add-Padding", "true")
-        .timeout_connect(10_000)
-        .call();
-
-    set_checkpwn_panic!(api::errors::DECODING_ERROR);
-    let request_status = pass_stat.status();
-    let pass_body: String = pass_stat.into_string().unwrap();
-
-    if api::search_in_range(&pass_body, &hashed_password) {
-        api::breach_report(request_status, "", true);
-    } else {
-        api::breach_report(404, "", true);
-    }
-
-    // Zero out as this contains a weakly hashed password
-    hashed_password.zeroize();
-}
-
-fn main() {
+fn main() -> Result<()> {
     // Set custom usage panic message
-    set_checkpwn_panic!(api::errors::USAGE_ERROR);
+    set_checkpwn_panic!(errors::USAGE_ERROR);
     assert!(env::args().len() >= 2);
     assert!(env::args().len() < 4);
 
@@ -101,15 +60,13 @@ fn main() {
     match argvs[1].to_lowercase().as_str() {
         "acc" => {
             assert!(argvs.len() == 3);
-            acc_check(&argvs[2]);
+            acc_check(&argvs[2])?;
         }
         "pass" => {
             assert!(argvs.len() == 2);
-            set_checkpwn_panic!(api::errors::PASSWORD_ERROR);
-            let password = api::PassArg {
-                password: rpassword::prompt_password_stdout("Password: ").unwrap(),
-            };
-            pass_check(&password);
+            let hashed_password = Password::new(&rpassword::prompt_password_stdout("Password: ")?)?;
+            let is_breached = checkpwn_lib::check_password(&hashed_password)?;
+            breach_report(is_breached, "", true);
         }
         "register" => {
             assert!(argvs.len() == 3);
@@ -129,7 +86,7 @@ fn main() {
                 );
                 let mut overwrite_choice = String::new();
 
-                stdin().read_line(&mut overwrite_choice).unwrap();
+                stdin().read_line(&mut overwrite_choice)?;
                 overwrite_choice.to_lowercase();
 
                 match overwrite_choice.trim() {
@@ -145,11 +102,91 @@ fn main() {
         _ => panic!(),
     };
     // Zero out the collected arguments, in case the user accidentally inputs sensitive info
-    for argument in argvs.iter_mut() {
-        argument.zeroize();
+    argvs.iter_mut().zeroize();
+
+    Ok(())
+}
+
+/// Make a breach report based on a u16 status code and print result to terminal.
+fn breach_report(breached: bool, searchterm: &str, is_password: bool) {
+    // Do not display password in terminal
+    let request_key = if is_password { "********" } else { searchterm };
+
+    if breached {
+        println!(
+            "Breach status for {}: {}",
+            request_key.cyan(),
+            "BREACH FOUND".red()
+        );
+    } else {
+        println!(
+            "Breach status for {}: {}",
+            request_key.cyan(),
+            "NO BREACH FOUND".green()
+        );
     }
-    // Only one request every 1600 milliseconds from any given IP
-    thread::sleep(time::Duration::from_millis(1600));
+}
+
+/// Read file into buffer.
+fn read_file(path: &str) -> Result<BufReader<File>, Error> {
+    set_checkpwn_panic!(errors::READ_FILE_ERROR);
+    let file_path = File::open(path).unwrap();
+
+    Ok(BufReader::new(file_path))
+}
+
+/// Strip all whitespace and all newlines from a given string.
+fn strip(string: &str) -> String {
+    string
+        .replace("\n", "")
+        .replace(" ", "")
+        .replace("\'", "'")
+        .replace("\t", "")
+}
+
+/// HIBP breach request used for `acc` arguments.
+fn acc_breach_request(searchterm: &str, api_key: &str) -> Result<(), checkpwn_lib::CheckpwnError> {
+    let is_breached = checkpwn_lib::check_account(searchterm, api_key)?;
+    breach_report(is_breached, searchterm, false);
+
+    Ok(())
+}
+
+fn acc_check(data_search: &str) -> Result<(), checkpwn_lib::CheckpwnError> {
+    // NOTE: checkpwn_lib handles any sleeping so we don't exceed the rate limit.
+    set_checkpwn_panic!(errors::MISSING_API_KEY);
+    let mut config = config::Config::new();
+    config.load_config().unwrap();
+
+    // Check if user wants to check a local list
+    if data_search.ends_with(".ls") {
+        set_checkpwn_panic!(errors::BUFREADER_ERROR);
+        let file = read_file(data_search).unwrap();
+
+        for line_iter in file.lines() {
+            set_checkpwn_panic!(errors::READLINE_ERROR);
+            let line = strip(&line_iter.unwrap());
+            if line.is_empty() {
+                continue;
+            }
+            acc_breach_request(&line, &config.api_key)?;
+        }
+    } else {
+        acc_breach_request(data_search, &config.api_key)?;
+    }
+
+    Ok(())
+}
+
+#[test]
+fn test_strip_white_new() {
+    let string_1 = String::from("fkljjsdjlksfdklj dfiwj wefwefwfe");
+    let string_2 = String::from("derbrererer\n");
+    let string_3 = String::from("dee\nwfweww   rb  tte rererer\n");
+
+    assert_eq!(&strip(&string_1), "fkljjsdjlksfdkljdfiwjwefwefwfe");
+    assert_eq!(&strip(&string_2), "derbrererer");
+    assert_eq!(&strip(&string_3), "deewfwewwrbtterererer");
 }
 
 #[test]

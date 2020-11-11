@@ -1,9 +1,5 @@
-extern crate dirs_next;
-extern crate serde;
-extern crate serde_yaml;
-
-use self::dirs_next::config_dir;
-use self::serde::{Deserialize, Serialize};
+use dirs_next::config_dir;
+use serde::{Deserialize, Serialize};
 use std::{fs, io::Write, path::PathBuf};
 
 const CHECKPWN_CONFIG_FILE_NAME: &str = "checkpwn.yml";
