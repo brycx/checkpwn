@@ -16,7 +16,7 @@ hex = "0.4.2"
 ureq = { version = "1.4.1", default-features = false, features = ["tls"] }
 rpassword = "5.0.0"
 zeroize = "1.1.0"
-dirs = "3.0.1"
+dirs-next = "2.0.0"
 serde = { version = "1.0.106", features = ["derive"] }
 serde_yaml = "0.8.11"
 

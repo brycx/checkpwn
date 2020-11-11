@@ -1,8 +1,8 @@
-extern crate dirs;
+extern crate dirs_next;
 extern crate serde;
 extern crate serde_yaml;
 
-use self::dirs::config_dir;
+use self::dirs_next::config_dir;
 use self::serde::{Deserialize, Serialize};
 use std::{fs, io::Write, path::PathBuf};
 
