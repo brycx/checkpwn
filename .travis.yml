@@ -15,7 +15,7 @@ matrix:
     - rust: nightly
 script:
 - cargo clean
-- cargo build
+- cargo build --release
 - cargo test
 
 after_success: |
