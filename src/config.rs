@@ -67,7 +67,7 @@ impl Config {
     }
 
     #[cfg(not(debug_assertions))]
-    pub fn load_config(&mut self) {
+    pub fn load_config(&mut self)-> Result<(), Box<dyn std::error::Error>> {
         let path = self
             .get_config_path()
             .expect("Failed to determine configuration file path.");
@@ -75,6 +75,8 @@ impl Config {
         let config_yml: Config = serde_yaml::from_str(&config_string)?;
 
         self.api_key = config_yml.api_key;
+
+        Ok(())
     }
 
     pub fn save_config(&self, api_key: &str) -> Result<(), Box<dyn std::error::Error>> {
