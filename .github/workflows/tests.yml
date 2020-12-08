@@ -32,10 +32,9 @@ jobs:
           profile: minimal
           toolchain: ${{ matrix.rust }}
           override: true
-      - name: Run cargo test - release
+      - name: Run cargo test
         env:
           API_KEY: ${{secrets.HIBP_TEST_KEY}}
         uses: actions-rs/cargo@v1
         with:
           command: test
-          args: --release
