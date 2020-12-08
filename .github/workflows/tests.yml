@@ -1,0 +1,39 @@
+on:
+  # Test on PRs for any branch
+  pull_request:
+    branches:
+      - '*'
+  # Test only pushes to master branch
+  push:
+    branches:
+      - master
+  schedule:
+    - cron: '0 0 * * 0' # Midnight of each sunday
+
+jobs:
+  tests:
+    name: Test Suite
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        rust:
+          - stable
+          - nightly
+
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v2
+
+      - name: Install toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: ${{ matrix.rust }}
+          override: true
+      - name: Run cargo test - release
+        env:
+          API_KEY: ${{secrets.HIBP_TEST_KEY}}
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: --release
