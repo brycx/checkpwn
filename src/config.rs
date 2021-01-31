@@ -67,7 +67,7 @@ impl Config {
     }
 
     #[cfg(not(debug_assertions))]
-    pub fn load_config(&mut self)-> Result<(), Box<dyn std::error::Error>> {
+    pub fn load_config(&mut self) -> Result<(), Box<dyn std::error::Error>> {
         let path = self
             .get_config_path()
             .expect("Failed to determine configuration file path.");
