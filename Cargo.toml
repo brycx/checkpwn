@@ -22,3 +22,4 @@ anyhow = "1.0.33"
 
 [dev-dependencies]
 assert_cmd = "2.0.0"
+rand = "0.8.4"

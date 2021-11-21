@@ -59,17 +59,17 @@ fn main() -> Result<()> {
 
     match argvs[1].to_lowercase().as_str() {
         "acc" => {
-            assert!(argvs.len() == 3);
+            assert_eq!(argvs.len(), 3);
             acc_check(&argvs[2])?;
         }
         "pass" => {
-            assert!(argvs.len() == 2);
+            assert_eq!(argvs.len(), 2);
             let hashed_password = Password::new(&rpassword::prompt_password_stdout("Password: ")?)?;
             let is_breached = checkpwn_lib::check_password(&hashed_password)?;
             breach_report(is_breached, "", true);
         }
         "register" => {
-            assert!(argvs.len() == 3);
+            assert_eq!(argvs.len(), 3);
             let configuration = config::Config::new();
             let config_path = configuration
                 .get_config_path()
@@ -200,11 +200,29 @@ fn test_cli_acc_breach() {
 
 #[test]
 fn test_cli_acc_no_breach() {
+    use rand::prelude::*;
+
+    let mut rng = thread_rng();
+    let mut email_user: [char; 8] = ['a'; 8];
+    let mut email_domain: [char; 8] = ['a'; 8];
+    rng.fill(&mut email_user);
+    rng.fill(&mut email_domain);
+
+    let rnd_email = format!(
+        "{:?}@{:?}.com",
+        email_user.iter().collect::<String>(),
+        email_domain.iter().collect::<String>()
+    );
+
     let res = Command::new("cargo")
-        .args(&["run", "acc", "fsrEos7s@wZ3zdGxr.com"])
+        .args(&["run", "acc", &rnd_email])
         .unwrap();
 
-    assert!(String::from_utf8_lossy(&res.stdout).contains("NO BREACH FOUND"));
+    assert!(
+        String::from_utf8_lossy(&res.stdout).contains("NO BREACH FOUND"),
+        "Found breach for {:?}",
+        rnd_email
+    );
 }
 
 #[test]
