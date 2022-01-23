@@ -87,7 +87,7 @@ fn main() -> Result<()> {
                 let mut overwrite_choice = String::new();
 
                 stdin().read_line(&mut overwrite_choice)?;
-                overwrite_choice.to_lowercase();
+                overwrite_choice = overwrite_choice.to_lowercase();
 
                 match overwrite_choice.trim() {
                     "y" => match configuration.save_config(&argvs[2]) {
