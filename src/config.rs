@@ -89,9 +89,9 @@ impl Config {
             api_key: api_key.to_string(),
         };
 
-        let config_to_write = serde_yaml::to_vec(&new_config)?;
+        let config_to_write = serde_yaml::to_string(&new_config)?;
         let mut config_file = fs::File::create(&path.config_file_path)?;
-        config_file.write_all(&config_to_write)?;
+        config_file.write_all(config_to_write.as_bytes())?;
 
         Ok(())
     }

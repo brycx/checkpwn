@@ -138,10 +138,10 @@ fn read_file(path: &str) -> Result<BufReader<File>, Error> {
 /// Strip all whitespace and all newlines from a given string.
 fn strip(string: &str) -> String {
     string
-        .replace("\n", "")
-        .replace(" ", "")
-        .replace("\'", "'")
-        .replace("\t", "")
+        .replace('\n', "")
+        .replace(' ', "")
+        .replace('\'', "")
+        .replace('\t', "")
 }
 
 /// HIBP breach request used for `acc` arguments.
