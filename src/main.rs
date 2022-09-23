@@ -64,7 +64,7 @@ fn main() -> Result<()> {
         }
         "pass" => {
             assert_eq!(argvs.len(), 2);
-            let hashed_password = Password::new(&rpassword::prompt_password_stdout("Password: ")?)?;
+            let hashed_password = Password::new(&rpassword::prompt_password("Password: ")?)?;
             let is_breached = checkpwn_lib::check_password(&hashed_password)?;
             breach_report(is_breached, "", true);
         }
@@ -138,10 +138,10 @@ fn read_file(path: &str) -> Result<BufReader<File>, Error> {
 /// Strip all whitespace and all newlines from a given string.
 fn strip(string: &str) -> String {
     string
-        .replace("\n", "")
-        .replace(" ", "")
-        .replace("\'", "'")
-        .replace("\t", "")
+        .replace('\n', "")
+        .replace(' ', "")
+        .replace('\'', "")
+        .replace('\t', "")
 }
 
 /// HIBP breach request used for `acc` arguments.
