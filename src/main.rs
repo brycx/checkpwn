@@ -1,6 +1,6 @@
 // MIT License
 
-// Copyright (c) 2018-2022 brycx
+// Copyright (c) 2018-2026 brycx
 
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -43,7 +43,7 @@ use std::io::{BufReader, Error};
 #[cfg(test)]
 use assert_cmd::prelude::*;
 use std::env;
-use std::io::{stdin, BufRead};
+use std::io::{BufRead, stdin};
 use std::panic;
 #[cfg(test)]
 use std::process::Command;
@@ -137,11 +137,7 @@ fn read_file(path: &str) -> Result<BufReader<File>, Error> {
 
 /// Strip all whitespace and all newlines from a given string.
 fn strip(string: &str) -> String {
-    string
-        .replace('\n', "")
-        .replace(' ', "")
-        .replace('\'', "")
-        .replace('\t', "")
+    string.replace(['\n', ' ', '\'', '\t'], "")
 }
 
 /// HIBP breach request used for `acc` arguments.
@@ -200,19 +196,14 @@ fn test_cli_acc_breach() {
 
 #[test]
 fn test_cli_acc_no_breach() {
-    use rand::prelude::*;
+    use rand::RngExt;
+    use rand::distr::Alphanumeric;
 
-    let mut rng = thread_rng();
-    let mut email_user: [char; 8] = ['a'; 8];
-    let mut email_domain: [char; 8] = ['a'; 8];
-    rng.fill(&mut email_user);
-    rng.fill(&mut email_domain);
+    let mut rng = rand::rng();
+    let email_user: String = (0..8).map(|_| rng.sample(Alphanumeric) as char).collect();
+    let email_domain: String = (0..8).map(|_| rng.sample(Alphanumeric) as char).collect();
 
-    let rnd_email = format!(
-        "{:?}@{:?}.com",
-        email_user.iter().collect::<String>(),
-        email_domain.iter().collect::<String>()
-    );
+    let rnd_email = format!("{:?}@{:?}.com", email_user, email_domain);
 
     let res = Command::new("cargo")
         .args(&["run", "acc", &rnd_email])
