@@ -1,12 +1,23 @@
 version: 2
-
 updates:
   - package-ecosystem: "cargo"
-    directory: "/"
+    directory: "/" # Location of package manifests
     schedule:
       interval: "daily"
+
+    commit-message:
+      # Prefix all commit messages with "deps:"
+      prefix: "deps:"
+    cooldown:
+      default-days: 7
 
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
       interval: "daily"
+
+    commit-message:
+      # Prefix all commit messages with "ci:"
+      prefix: "ci:"
+    cooldown:
+      default-days: 7

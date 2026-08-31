@@ -1,3 +1,12 @@
+### 0.6.1
+
+**Date:** August 31, 2026.
+
+**Changelog:**
+- Commit `Cargo.lock`
+- Harden GitHub Actions workflows
+
+
 ### 0.6.0
 
 **Date:** March 21, 2026.

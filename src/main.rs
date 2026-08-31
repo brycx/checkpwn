@@ -188,7 +188,7 @@ fn test_strip_white_new() {
 #[test]
 fn test_cli_acc_breach() {
     let res = Command::new("cargo")
-        .args(&["run", "acc", "test@example.com"])
+        .args(["run", "acc", "test@example.com"])
         .unwrap();
 
     assert!(String::from_utf8_lossy(&res.stdout).contains("BREACH FOUND"));
@@ -206,7 +206,7 @@ fn test_cli_acc_no_breach() {
     let rnd_email = format!("{:?}@{:?}.com", email_user, email_domain);
 
     let res = Command::new("cargo")
-        .args(&["run", "acc", &rnd_email])
+        .args(["run", "acc", &rnd_email])
         .unwrap();
 
     assert!(
@@ -220,7 +220,7 @@ fn test_cli_acc_no_breach() {
 #[should_panic]
 fn test_cli_arg_fail() {
     Command::new("cargo")
-        .args(&["run", "wrong", "test@example.com"])
+        .args(["run", "wrong", "test@example.com"])
         .unwrap()
         .assert()
         .failure();
@@ -230,7 +230,7 @@ fn test_cli_arg_fail() {
 #[should_panic]
 fn test_cli_arg_fail_2() {
     Command::new("cargo")
-        .args(&["run"])
+        .args(["run"])
         .unwrap()
         .assert()
         .failure();
@@ -240,7 +240,7 @@ fn test_cli_arg_fail_2() {
 #[should_panic]
 fn test_cli_arg_fail_3() {
     Command::new("cargo")
-        .args(&["run", "wrong", "test@example.com", "too much"])
+        .args(["run", "wrong", "test@example.com", "too much"])
         .unwrap()
         .assert()
         .failure();
@@ -249,7 +249,7 @@ fn test_cli_arg_fail_3() {
 #[test]
 fn test_cli_arg_ok() {
     Command::new("cargo")
-        .args(&["run", "acc", "test@example.com"])
+        .args(["run", "acc", "test@example.com"])
         .unwrap()
         .assert()
         .success();

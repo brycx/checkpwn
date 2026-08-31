@@ -1,33 +1,35 @@
-name: Security Audit
-on:
-  schedule:
-    - cron: '0 0 * * *' # Midnight of each day
+name: cargo deny (licenses, advisories, sources)
 
 permissions:
   contents: read
 
+on:
+  push:
+    # Check immediately if dependencies are altered
+    paths:
+      - "**/Cargo.toml"
+    # Check also at midnight each day
+  schedule:
+    - cron: "0 0 * * *"
+
+# We don't need to run older workflows for the same PR's, since we always want the output of the newest ones.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  security_audit:
-    name: Security Audit
+  cargo-deny:
+    name: EmbarkStudios/cargo-deny
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        checks:
+          - advisories
+
     steps:
-      - name: Checkout sources
-        uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: master
           persist-credentials: false
-
-      - name: Install stable toolchain
-        uses: actions-rs/toolchain@v1
+      - uses: EmbarkStudios/cargo-deny-action@3c6349835b2b7b196a839186cb8b78e02f7b5f25 # v2.1.1
         with:
-          toolchain: stable
-          override: true
-
-      - name: Install cargo audit
-        run: cargo install cargo-audit
-
-      - name: Run cargo audit
-        uses: actions-rs/cargo@v1
-        with:
-          command: audit
-          args: --ignore RUSTSEC-2020-0095 --deny warnings
+          command: check ${{ matrix.checks }}
