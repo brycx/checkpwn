@@ -1,3 +1,10 @@
+### 0.6.2
+
+**Date:** September 16, 2026.
+
+**Changelog:**
+- Bump `Cargo.lock` to include `rustls` security-fix.
+
 ### 0.6.1
 
 **Date:** August 31, 2026.
