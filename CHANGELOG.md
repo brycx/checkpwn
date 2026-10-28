@@ -1,3 +1,8 @@
+### 0.6.3
+
+**Date:** October 28, 2026.
+- Bump `Cargo.lock` to include security-fixes.
+
 ### 0.6.2
 
 **Date:** September 16, 2026.
