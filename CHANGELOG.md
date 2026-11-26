@@ -1,3 +1,8 @@
+### 0.6.4
+**Date:** November 26, 2026.
+- Replace unmaintained `serde_yaml` with `yaml_serde`.
+- Bump `Cargo.lock`.
+
 ### 0.6.3
 
 **Date:** October 28, 2026.

@@ -1,6 +1,6 @@
 [package]
 name = "checkpwn"
-version = "0.6.3"
+version = "0.6.4"
 authors = ["brycx <brycx@protonmail.com>"]
 description = "Check Have I Been Pwned and see if it's time for you to change passwords."
 keywords = [ "cli", "password", "security", "HIBP" ]
@@ -16,7 +16,7 @@ rpassword = "7"
 zeroize = "1"
 dirs-next = "2"
 serde = { version = "1", features = ["derive"] }
-serde_yaml = "0.9.13"
+yaml_serde = "0.10"
 checkpwn_lib = "0.3.0"
 anyhow = "1"
 

@@ -57,7 +57,7 @@ impl Config {
                     .get_config_path()
                     .expect("Failed to determine configuration file path.");
                 let config_string = fs::read_to_string(&path.config_file_path)?;
-                let config_yml: Config = serde_yaml::from_str(&config_string)?;
+                let config_yml: Config = yaml_serde::from_str(&config_string)?;
 
                 self.api_key = config_yml.api_key;
                 Ok(())
@@ -72,7 +72,7 @@ impl Config {
             .get_config_path()
             .expect("Failed to determine configuration file path.");
         let config_string = fs::read_to_string(&path.config_file_path)?;
-        let config_yml: Config = serde_yaml::from_str(&config_string)?;
+        let config_yml: Config = yaml_serde::from_str(&config_string)?;
 
         self.api_key = config_yml.api_key;
 
@@ -89,7 +89,7 @@ impl Config {
             api_key: api_key.to_string(),
         };
 
-        let config_to_write = serde_yaml::to_string(&new_config)?;
+        let config_to_write = yaml_serde::to_string(&new_config)?;
         let mut config_file = fs::File::create(&path.config_file_path)?;
         config_file.write_all(config_to_write.as_bytes())?;
 
